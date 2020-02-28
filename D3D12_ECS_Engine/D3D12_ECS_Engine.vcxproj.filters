@@ -19,6 +19,9 @@
     <Filter Include="头文件\ULT_H">
       <UniqueIdentifier>{00b56a2a-d8ab-4d2b-b22d-08041496d155}</UniqueIdentifier>
     </Filter>
+    <Filter Include="源文件\DXException">
+      <UniqueIdentifier>{0de8fd5f-d2e6-45e6-9824-9d661c78c110}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="WinMain.cpp">
@@ -26,6 +29,9 @@
     </ClCompile>
     <ClCompile Include="App.cpp">
       <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="DXException.cpp">
+      <Filter>源文件\DXException</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -37,6 +43,9 @@
     </ClInclude>
     <ClInclude Include="App.h">
       <Filter>头文件\Entry_H</Filter>
+    </ClInclude>
+    <ClInclude Include="DXException.h">
+      <Filter>源文件\DXException</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

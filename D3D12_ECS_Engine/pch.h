@@ -13,3 +13,7 @@
 #include <DirectXMath.h>
 #include <d3d12.h>
 
+/*string*/
+#include <string>
+#include <ostream>
+#include <sstream>

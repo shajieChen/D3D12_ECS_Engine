@@ -1,5 +1,18 @@
 #include "WinMain.h"
 #include "pch.h"
+LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) 
+{
+	switch (msg) {
+	case WM_CLOSE:
+		PostQuitMessage(0);
+		break;
+
+	default:
+		break;
+	}
+
+	return DefWindowProc(hWnd, msg, wParam, lParam);
+}
  
 int WINAPI WinMain(
 	HINSTANCE hInstance,
@@ -13,7 +26,7 @@ int WINAPI WinMain(
 	WNDCLASSEX wc = { 0 };
 	wc.cbSize = sizeof(wc);
 	wc.style = CS_OWNDC;
-	wc.lpfnWndProc = DefWindowProc;
+	wc.lpfnWndProc = WndProc;
 	wc.cbClsExtra = 0;
 	wc.cbWndExtra = 0;
 	wc.hInstance = hInstance;
@@ -33,7 +46,15 @@ int WINAPI WinMain(
 	);
 
 	ShowWindow(hWnd, SW_SHOW);
-	while (true);
+	MSG msg;
+	BOOL gResult;
+	while ((gResult = GetMessage(&msg, nullptr, 0, 0)) > 0) {
+		TranslateMessage(&msg);
+		DispatchMessage(&msg);
+	}
 
-	return 0;
+	switch (gResult) {
+	case -1: return -1;
+	default: return msg.wParam;
+	}
 }
