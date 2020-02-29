@@ -22,6 +22,12 @@
     <Filter Include="源文件\DXException">
       <UniqueIdentifier>{0de8fd5f-d2e6-45e6-9824-9d661c78c110}</UniqueIdentifier>
     </Filter>
+    <Filter Include="源文件\Core">
+      <UniqueIdentifier>{a1829c30-edf0-40cf-ace5-ac75090b3c82}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\Core\Graphic">
+      <UniqueIdentifier>{4a42d7da-5d67-49ea-aff9-d764c133c99b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="WinMain.cpp">
@@ -32,6 +38,9 @@
     </ClCompile>
     <ClCompile Include="DXException.cpp">
       <Filter>源文件\DXException</Filter>
+    </ClCompile>
+    <ClCompile Include="StepTimer.cpp">
+      <Filter>头文件\ULT_H</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -46,6 +55,15 @@
     </ClInclude>
     <ClInclude Include="DXException.h">
       <Filter>源文件\DXException</Filter>
+    </ClInclude>
+    <ClInclude Include="Vertex.h">
+      <Filter>源文件\Core\Graphic</Filter>
+    </ClInclude>
+    <ClInclude Include="d3dx12.h">
+      <Filter>头文件\ULT_H</Filter>
+    </ClInclude>
+    <ClInclude Include="StepTimer.h">
+      <Filter>头文件\ULT_H</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -6,14 +6,17 @@
 
 
 /*Windows API*/
-#include <Windows.h>
-#include <d3d12.h>
+#include <Windows.h> 
 #include <dxgi1_4.h>
 #include <d3dcompiler.h>
 #include <DirectXMath.h>
 #include <d3d12.h>
+#include "d3dx12.h"
 
 /*string*/
 #include <string>
 #include <ostream>
 #include <sstream>
+
+/*Exceptions*/
+#include "DXException.h"

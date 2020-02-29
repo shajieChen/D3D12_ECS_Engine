@@ -1,5 +1,6 @@
 #pragma once
 #include "pch.h"
+#include <functional>
 #ifndef APP_H
 #define APP_H
 
@@ -13,7 +14,7 @@ public:
 	static App* instance; 
 	App(HINSTANCE hInstance, int ShowWnd , int width, int height, bool fullScreen);
 	~App();
-	void Run();
+	void Run(std::function<void(App*)> callBack);
 	LRESULT WinCallBack(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 private:
@@ -28,8 +29,10 @@ private:
 
 	/*D3D12*/
 	const int frameBufferCount = FrameBufferCount;						/*使用三缓冲的情况下*/
+
 	ID3D12Device* m_device;													
 	IDXGISwapChain3* m_SwapChain; 
+	ID3D12DescriptorHeap* m_rtvDescriptorHeap; 
 	ID3D12Resource* m_RenderTarget[FrameBufferCount];
 
 		/*GPUCommandQueue & CPUCommandList*/
@@ -55,9 +58,9 @@ private:
 	int m_RTVDescriptorSize; //描述当前前后buffer的大小 
 
 private: /*Private Helper Method*/
-	bool InitD3D12();
-	bool InitImGUI();
-	bool InitGraphicSingletonEntity(); 
+	void InitD3D12();
+	//bool InitImGUI();
+	//bool InitGraphicSingletonEntity(); 
 
 	void Update(); 
 	void Render(); 

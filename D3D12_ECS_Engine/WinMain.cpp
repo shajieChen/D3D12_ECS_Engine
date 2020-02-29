@@ -1,60 +1,27 @@
 #include "WinMain.h"
 #include "pch.h"
-LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) 
-{
-	switch (msg) {
-	case WM_CLOSE:
-		PostQuitMessage(0);
-		break;
-
-	default:
-		break;
-	}
-
-	return DefWindowProc(hWnd, msg, wParam, lParam);
-}
- 
+#include "App.h" 
 int WINAPI WinMain(
 	HINSTANCE hInstance,
 	HINSTANCE hPrevInstance,
 	LPSTR lpCmdLine,
 	int nCmdShow
 ) {
-
-	const LPCWSTR pClassName = L"D3D12_With_ECS";
-	 
-	WNDCLASSEX wc = { 0 };
-	wc.cbSize = sizeof(wc);
-	wc.style = CS_OWNDC;
-	wc.lpfnWndProc = WndProc;
-	wc.cbClsExtra = 0;
-	wc.cbWndExtra = 0;
-	wc.hInstance = hInstance;
-	wc.hIcon = nullptr;
-	wc.hCursor = nullptr;
-	wc.hbrBackground = nullptr;
-	wc.lpszMenuName = nullptr;
-	wc.lpszClassName = pClassName;
-	wc.hIconSm = nullptr;
-	RegisterClassEx(&wc);
-	 
-	HWND hWnd = CreateWindowEx(
-		0, pClassName, L"D3D12_With_ECS",
-		WS_CAPTION | WS_MINIMIZEBOX | WS_SYSMENU,
-		200, 200, 640, 480, nullptr, nullptr,
-		hInstance, nullptr
-	);
-
-	ShowWindow(hWnd, SW_SHOW);
-	MSG msg;
-	BOOL gResult;
-	while ((gResult = GetMessage(&msg, nullptr, 0, 0)) > 0) {
-		TranslateMessage(&msg);
-		DispatchMessage(&msg);
+	//获取当前exe运行时候的路径
+	{
+		LPWSTR currentDir = {}; 
+		GetModuleFileName(0, currentDir, 1024);
+		char* last = strrchr(reinterpret_cast<char*>(currentDir), '\\');
+		if (last)
+		{
+			*last = 0; 
+			SetCurrentDirectory(currentDir);
+		}
 	}
-
-	switch (gResult) {
-	case -1: return -1;
-	default: return msg.wParam;
-	}
+	App* app = new App(hInstance,  nCmdShow , 1280 , 720 , true);
+	app->Run([&](App* app)
+	{
+		//运行游戏逻辑
+	});
+	return 0; 
 }

@@ -144,12 +144,16 @@
   <ItemGroup>
     <ClCompile Include="App.cpp" />
     <ClCompile Include="DXException.cpp" />
+    <ClCompile Include="StepTimer.cpp" />
     <ClCompile Include="WinMain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App.h" />
+    <ClInclude Include="d3dx12.h" />
     <ClInclude Include="DXException.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="StepTimer.h" />
+    <ClInclude Include="Vertex.h" />
     <ClInclude Include="WinMain.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
