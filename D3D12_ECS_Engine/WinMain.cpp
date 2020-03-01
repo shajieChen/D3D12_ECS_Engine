@@ -9,16 +9,17 @@ int WINAPI WinMain(
 ) {
 	//获取当前exe运行时候的路径
 	{
-		LPWSTR currentDir = {}; 
-		GetModuleFileName(0, currentDir, 1024);
-		char* last = strrchr(reinterpret_cast<char*>(currentDir), '\\');
+		char currentDir[1024] = {};
+		GetModuleFileName(0, reinterpret_cast<LPWSTR>(currentDir), 1024);
+		char* last = strrchr(currentDir, '\\');
 		if (last)
 		{
 			*last = 0; 
-			SetCurrentDirectory(currentDir);
+			SetCurrentDirectory(reinterpret_cast<LPWSTR>(currentDir));
 		}
-	}
-	App* app = new App(hInstance,  nCmdShow , 1280 , 720 , true);
+	} 
+
+	App* app = new App(hInstance,  nCmdShow , 1280 , 720 , false);
 	app->Run([&](App* app)
 	{
 		//运行游戏逻辑

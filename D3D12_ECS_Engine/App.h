@@ -1,6 +1,7 @@
 #pragma once
 #include "pch.h"
 #include <functional>
+#include "Vertex.h"
 #ifndef APP_H
 #define APP_H
 
@@ -26,7 +27,7 @@ private:
 	int m_Height; 
 	bool is_FullScreen; 
 	bool is_Running; 
-
+#pragma region Renderer 
 	/*D3D12*/
 	const int frameBufferCount = FrameBufferCount;						/*使用三缓冲的情况下*/
 
@@ -44,23 +45,28 @@ private:
 	ID3D12Fence* m_Fence[FrameBufferCount];
 	HANDLE m_FenceEvent; 
 	UINT64 m_FenceValue[FrameBufferCount];
-
+#pragma endregion
 	/*屏幕*/
 	ID3D12PipelineState* m_PipelineStateObject; 
 	ID3D12RootSignature* m_RootSignature;
-	D3D12_VIEWPORT* m_ViewPort; 
+	D3D12_VIEWPORT m_ViewPort; 
 	D3D12_RECT m_ScissorRect; 
 
-	D3D12_VERTEX_BUFFER_VIEW m_VB; //test
-	ID3D12Resource* m_shader; //test
+	D3D12_VERTEX_BUFFER_VIEW m_VBView; //test
+	ID3D12Resource* m_VB; //test
 
 	int m_FrameIndex; //当前RenderTarget
 	int m_RTVDescriptorSize; //描述当前前后buffer的大小 
 
 private: /*Private Helper Method*/
 	void InitD3D12();
+	void InitWindow(HINSTANCE& hInstance);
 	//bool InitImGUI();
 	//bool InitGraphicSingletonEntity(); 
+
+	void testGrawTriangle();  /*deletable */
+	void UpdateTriangle(); /*deletable*/
+
 
 	void Update(); 
 	void Render(); 
