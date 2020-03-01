@@ -55,6 +55,9 @@ private:
 	D3D12_VERTEX_BUFFER_VIEW m_VBView; //test
 	ID3D12Resource* m_VB; //test
 
+	ID3D12Resource* m_IB; //test
+	D3D12_INDEX_BUFFER_VIEW m_IBView;//test
+
 	int m_FrameIndex; //当前RenderTarget
 	int m_RTVDescriptorSize; //描述当前前后buffer的大小 
 

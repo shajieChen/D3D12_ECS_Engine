@@ -328,6 +328,54 @@ void App::testGrawTriangle()
 
 	m_CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_VB, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
 
+	//创建VBView 
+	m_VBView.BufferLocation = m_VB->GetGPUVirtualAddress();
+	m_VBView.StrideInBytes = sizeof(Vertex);
+	m_VBView.SizeInBytes = vBufferSize;
+
+	DWORD iList[] = {
+		0, 1, 2,
+		0, 3, 1
+	};
+
+	int iBufferSize = sizeof(iList);
+
+	/*IndexBuffer 创建*/
+	m_device->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT), 
+		D3D12_HEAP_FLAG_NONE, 
+		&CD3DX12_RESOURCE_DESC::Buffer(iBufferSize),
+		D3D12_RESOURCE_STATE_COPY_DEST, 
+		nullptr, 
+		IID_PPV_ARGS(&m_IB));
+
+	m_VB->SetName(L"Index Buffer Resource Heap");
+
+	ID3D12Resource* iBufferUploadHeap;
+	m_device->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD), 
+		D3D12_HEAP_FLAG_NONE, 
+		&CD3DX12_RESOURCE_DESC::Buffer(vBufferSize), 
+		D3D12_RESOURCE_STATE_GENERIC_READ, 
+		nullptr,
+		IID_PPV_ARGS(&iBufferUploadHeap));
+	vBufferUploadHeap->SetName(L"Index Buffer Upload Resource Heap");
+
+	D3D12_SUBRESOURCE_DATA indexData = {};
+	indexData.pData = reinterpret_cast<BYTE*>(iList);
+	indexData.RowPitch = iBufferSize; 
+	indexData.SlicePitch = iBufferSize; 
+
+	UpdateSubresources(m_CommandList, m_IB, iBufferUploadHeap, 0, 0, 1, &indexData);
+
+	m_CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_IB, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
+
+	m_IBView.BufferLocation = m_IB->GetGPUVirtualAddress();
+	m_IBView.Format = DXGI_FORMAT_R32_UINT; // 32-bit unsigned integer (this is what a dword is, double word, a word is 2 bytes)
+	m_IBView.SizeInBytes = iBufferSize;
+
+
+
 	m_CommandList->Close();
 	ID3D12CommandList* ppCommandLists[] = { m_CommandList };
 	m_CommandQueue->ExecuteCommandLists(1, ppCommandLists);
@@ -337,11 +385,6 @@ void App::testGrawTriangle()
 	DX::ThrowIfFailed(CALL_INFO, 
 		m_CommandQueue->Signal(m_Fence[m_FrameIndex], m_FenceValue[m_FrameIndex])
 	);
-	 
-	//创建VBView 
-	m_VBView.BufferLocation = m_VB->GetGPUVirtualAddress();
-	m_VBView.StrideInBytes = sizeof(Vertex);
-	m_VBView.SizeInBytes = vBufferSize;
 
 }
 
@@ -368,7 +411,9 @@ void App::UpdateTriangle()
 	m_CommandList->RSSetScissorRects(1, &m_ScissorRect);
 	m_CommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	m_CommandList->IASetVertexBuffers(0, 1, &m_VBView);
-	m_CommandList->DrawInstanced(3, 1, 0, 0);
+	m_CommandList->IASetIndexBuffer(&m_IBView);
+	m_CommandList->DrawIndexedInstanced(6, 1, 0, 0, 0);
+
 
 	m_CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_RenderTarget[m_FrameIndex], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
 
@@ -418,6 +463,7 @@ void App::CleanUp()
 	m_CommandQueue->Release();
 	m_rtvDescriptorHeap->Release();
 	m_CommandList->Release();
+	m_IB->Release();
 
 	for (int i = 0; i < frameBufferCount; ++i)
 	{
