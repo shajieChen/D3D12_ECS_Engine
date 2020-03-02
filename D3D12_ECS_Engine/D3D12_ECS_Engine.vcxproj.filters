@@ -48,6 +48,9 @@
     <ClCompile Include="StepTimer.cpp">
       <Filter>头文件\ULT_H</Filter>
     </ClCompile>
+    <ClCompile Include="CRenderCommand.cpp">
+      <Filter>源文件\Core\Core_Graphic</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="WinMain.h">
@@ -76,6 +79,12 @@
     </ClInclude>
     <ClInclude Include="Vertex.h">
       <Filter>源文件\Core\test</Filter>
+    </ClInclude>
+    <ClInclude Include="SMesh.h">
+      <Filter>源文件\Core\Core_Graphic</Filter>
+    </ClInclude>
+    <ClInclude Include="SContext.h">
+      <Filter>源文件\Core\Core_Graphic</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

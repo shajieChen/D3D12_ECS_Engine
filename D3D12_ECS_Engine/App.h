@@ -2,6 +2,8 @@
 #include "pch.h"
 #include <functional>
 #include "Vertex.h"
+#include "DXObjects.h"
+#include "SContext.h"
 #ifndef APP_H
 #define APP_H
 
@@ -25,8 +27,7 @@ private:
 
 	int m_Width; 
 	int m_Height; 
-	bool is_FullScreen; 
-	bool is_Running; 
+	bool is_FullScreen;  
 #pragma region Renderer 
 	/*D3D12*/
 	const int frameBufferCount = FrameBufferCount;						/*使用三缓冲的情况下*/
@@ -77,5 +78,11 @@ private: /*Private Helper Method*/
 	void WaitForPreviousFrame(); 
 
 	void InitializeWind(HINSTANCE hInstance, int ShowWnd, int width, int height, bool isfullScreen);
+
+private:
+	DXObject m_dxo; 
+	//Graphic::Context m_ct; 
+
+
 };  
 #endif // !APP_H

@@ -143,6 +143,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="App.cpp" />
+    <ClCompile Include="CRenderCommand.cpp" />
     <ClCompile Include="DXException.cpp" />
     <ClCompile Include="StepTimer.cpp" />
     <ClCompile Include="WinMain.cpp" />
@@ -154,6 +155,8 @@
     <ClInclude Include="DXException.h" />
     <ClInclude Include="DXObjects.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="SContext.h" />
+    <ClInclude Include="SMesh.h" />
     <ClInclude Include="StepTimer.h" />
     <ClInclude Include="Vertex.h" />
     <ClInclude Include="WinMain.h" />

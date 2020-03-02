@@ -198,8 +198,7 @@ void App::InitD3D12()
 	/*CPUCommandlist*/
 	DX::ThrowIfFailed(CALL_INFO,  
 		m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT , m_CommandAllocator[0] , NULL, IID_PPV_ARGS(&m_CommandList))
-	);
-	//m_CommandList->Close();
+	); 
 
 	/*CPUFence*/
 	for (int i = 0; i < FrameBufferCount; i++)
@@ -402,6 +401,7 @@ void App::UpdateTriangle()
 	m_CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_RenderTarget[m_FrameIndex], D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), m_FrameIndex, m_RTVDescriptorSize);
 	m_CommandList->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
+	
 	const float clearColor[] = { 0.2f, 0.2f, 0.2f, 1.0f };
 	m_CommandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
 
