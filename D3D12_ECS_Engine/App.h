@@ -30,16 +30,13 @@ private:
 	bool is_FullScreen;  
 #pragma region Renderer 
 	/*D3D12*/
-	const int frameBufferCount = FrameBufferCount;						/*使用三缓冲的情况下*/
-
-	ID3D12Device* m_device;													
-	IDXGISwapChain3* m_SwapChain; 
+	const int frameBufferCount = FrameBufferCount;		 
 	ID3D12DescriptorHeap* m_rtvDescriptorHeap; 
-	ID3D12Resource* m_RenderTarget[FrameBufferCount];
+	//ID3D12Resource* m_RenderTarget[FrameBufferCount];
 
 		/*GPUCommandQueue & CPUCommandList*/
 	ID3D12CommandQueue* m_CommandQueue;									/*GPU命令列表*/
-	ID3D12GraphicsCommandList* m_CommandList;							/*CPU命令列表*/
+	//ID3D12GraphicsCommandList* m_CommandList;							/*CPU命令列表*/
 	ID3D12CommandAllocator* m_CommandAllocator[FrameBufferCount];		/*命令分配器*/
 
 		/*Fence CPU*/

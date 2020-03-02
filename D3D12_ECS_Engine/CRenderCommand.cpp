@@ -15,7 +15,7 @@ void RenderCommand::CleanUp() const
 
 void RenderCommand::Swap() const
 {
-    m_dxo.swapchain->Present(0, 0);
+    m_dxo.SwapChain->Present(0, 0);
 }
  
 

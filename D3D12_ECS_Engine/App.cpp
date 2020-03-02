@@ -106,7 +106,7 @@ void App::InitD3D12()
 		adapter->GetDesc1(&desc);
 		if (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)
 		{
-			// we dont want a software device
+			// we dont want a software Device
 			adapterIndex++;
 			continue;
 		}
@@ -125,15 +125,15 @@ void App::InitD3D12()
 	}
 
 
-	/*创建device*/
+	/*创建Device*/
 	DX::ThrowIfFailed(CALL_INFO , 
-		D3D12CreateDevice(adapter,D3D_FEATURE_LEVEL_11_0,IID_PPV_ARGS(&m_device))
+		D3D12CreateDevice(adapter,D3D_FEATURE_LEVEL_11_0,IID_PPV_ARGS(&m_dxo.Device))
 	);
 
 	/*创建GPUCommandQueue*/
 	D3D12_COMMAND_QUEUE_DESC cqDesc = {}; 
 	DX::ThrowIfFailed(CALL_INFO ,
-		m_device->CreateCommandQueue(&cqDesc , IID_PPV_ARGS(&m_CommandQueue))
+		m_dxo.Device->CreateCommandQueue(&cqDesc , IID_PPV_ARGS(&m_CommandQueue))
 	);
 
 	/*创建Swapchain*/
@@ -160,29 +160,29 @@ void App::InitD3D12()
 									&swapChainDesc ,
 									&tmpSwapChain)
 	);
-	m_SwapChain = static_cast<IDXGISwapChain3*>(tmpSwapChain);
+	m_dxo.SwapChain = static_cast<IDXGISwapChain3*>(tmpSwapChain);
 
 
 	/*描述符堆*/
-	m_FrameIndex = m_SwapChain->GetCurrentBackBufferIndex();
+	m_FrameIndex = m_dxo.SwapChain->GetCurrentBackBufferIndex();
 		//RTV
 	D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {}; 
 	rtvHeapDesc.NumDescriptors = FrameBufferCount; 
 	rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV; 
 	rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE; 
 	DX::ThrowIfFailed(CALL_INFO, 
-		m_device->CreateDescriptorHeap(&rtvHeapDesc , IID_PPV_ARGS(&m_rtvDescriptorHeap))
+		m_dxo.Device->CreateDescriptorHeap(&rtvHeapDesc , IID_PPV_ARGS(&m_rtvDescriptorHeap))
 	);
-	m_RTVDescriptorSize = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	m_RTVDescriptorSize = m_dxo.Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 	
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());;
 
 	for (int i = 0; i < FrameBufferCount; i++)
 	{
 		DX::ThrowIfFailed(CALL_INFO,
-			m_SwapChain->GetBuffer(i, IID_PPV_ARGS(&m_RenderTarget[i]))
+			m_dxo.SwapChain->GetBuffer(i, IID_PPV_ARGS(&m_dxo.RenderTarget[i]))
 		);
-		m_device->CreateRenderTargetView(m_RenderTarget[i] , nullptr, rtvHandle);
+		m_dxo.Device->CreateRenderTargetView(m_dxo.RenderTarget[i].Get() , nullptr, rtvHandle);
 
 		rtvHandle.Offset(1, m_RTVDescriptorSize);
 	}
@@ -191,20 +191,20 @@ void App::InitD3D12()
 	for (int i = 0; i < FrameBufferCount; i++)
 	{
 		DX::ThrowIfFailed(CALL_INFO,
-			m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_CommandAllocator[i]))
+			m_dxo.Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_CommandAllocator[i]))
 		);
 	}
 
 	/*CPUCommandlist*/
 	DX::ThrowIfFailed(CALL_INFO,  
-		m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT , m_CommandAllocator[0] , NULL, IID_PPV_ARGS(&m_CommandList))
+		m_dxo.Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT , m_CommandAllocator[0] , NULL, IID_PPV_ARGS(&m_dxo.CommandList))
 	); 
 
 	/*CPUFence*/
 	for (int i = 0; i < FrameBufferCount; i++)
 	{
 		DX::ThrowIfFailed(CALL_INFO,  
-			m_device->CreateFence(0 , D3D12_FENCE_FLAG_NONE , IID_PPV_ARGS(&m_Fence[i]))
+			m_dxo.Device->CreateFence(0 , D3D12_FENCE_FLAG_NONE , IID_PPV_ARGS(&m_Fence[i]))
 		);
 		m_FenceValue[i] = 0; 
 	}
@@ -224,7 +224,7 @@ void App::InitWindow(HINSTANCE& hInstance)
 
 	ID3DBlob* signature; 
 	D3D12SerializeRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, nullptr);
-	m_device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&m_RootSignature));
+	m_dxo.Device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&m_RootSignature));
 
 	//填充m_ViewPort
 	m_ViewPort.TopLeftX = 0;
@@ -287,7 +287,7 @@ void App::testGrawTriangle()
 	psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
 	psoDesc.NumRenderTargets = 1; 
 
-	m_device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_PipelineStateObject));
+	m_dxo.Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_PipelineStateObject));
 
 	//vb 
 	Vertex vList[] = {
@@ -297,7 +297,7 @@ void App::testGrawTriangle()
 	};
 	int vBufferSize = sizeof(vList);
 
-	m_device->CreateCommittedResource(
+	m_dxo.Device->CreateCommittedResource(
 		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
 		D3D12_HEAP_FLAG_NONE,
 		&CD3DX12_RESOURCE_DESC::Buffer(vBufferSize),
@@ -308,7 +308,7 @@ void App::testGrawTriangle()
 
 	/*创建上传缓冲区*/
 	ID3D12Resource* vBufferUploadHeap;
-	m_device->CreateCommittedResource
+	m_dxo.Device->CreateCommittedResource
 	(
 		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
 		D3D12_HEAP_FLAG_NONE,
@@ -323,9 +323,9 @@ void App::testGrawTriangle()
 	vertexData.pData = reinterpret_cast<BYTE*>(vList); 
 	vertexData.RowPitch = vBufferSize; 
 	vertexData.SlicePitch = vBufferSize;  
-	UpdateSubresources(m_CommandList, m_VB, vBufferUploadHeap, 0, 0, 1, &vertexData);
+	UpdateSubresources(m_dxo.CommandList.Get(), m_VB, vBufferUploadHeap, 0, 0, 1, &vertexData);
 
-	m_CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_VB, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
+	m_dxo.CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_VB, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
 
 	//创建VBView 
 	m_VBView.BufferLocation = m_VB->GetGPUVirtualAddress();
@@ -340,7 +340,7 @@ void App::testGrawTriangle()
 	int iBufferSize = sizeof(iList);
 
 	/*IndexBuffer 创建*/
-	m_device->CreateCommittedResource(
+	m_dxo.Device->CreateCommittedResource(
 		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT), 
 		D3D12_HEAP_FLAG_NONE, 
 		&CD3DX12_RESOURCE_DESC::Buffer(iBufferSize),
@@ -351,7 +351,7 @@ void App::testGrawTriangle()
 	m_VB->SetName(L"Index Buffer Resource Heap");
 
 	ID3D12Resource* iBufferUploadHeap;
-	m_device->CreateCommittedResource(
+	m_dxo.Device->CreateCommittedResource(
 		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD), 
 		D3D12_HEAP_FLAG_NONE, 
 		&CD3DX12_RESOURCE_DESC::Buffer(vBufferSize), 
@@ -365,9 +365,9 @@ void App::testGrawTriangle()
 	indexData.RowPitch = iBufferSize; 
 	indexData.SlicePitch = iBufferSize; 
 
-	UpdateSubresources(m_CommandList, m_IB, iBufferUploadHeap, 0, 0, 1, &indexData);
+	UpdateSubresources(m_dxo.CommandList.Get(), m_IB, iBufferUploadHeap, 0, 0, 1, &indexData);
 
-	m_CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_IB, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
+	m_dxo.CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_IB, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
 
 	m_IBView.BufferLocation = m_IB->GetGPUVirtualAddress();
 	m_IBView.Format = DXGI_FORMAT_R32_UINT; // 32-bit unsigned integer (this is what a dword is, double word, a word is 2 bytes)
@@ -375,8 +375,8 @@ void App::testGrawTriangle()
 
 
 
-	m_CommandList->Close();
-	ID3D12CommandList* ppCommandLists[] = { m_CommandList };
+	m_dxo.CommandList->Close();
+	ID3D12CommandList* ppCommandLists[] = { m_dxo.CommandList.Get() };
 	m_CommandQueue->ExecuteCommandLists(1, ppCommandLists);
 
 	//添加m_Fence 保证再会之前
@@ -395,30 +395,30 @@ void App::UpdateTriangle()
 		m_CommandAllocator[m_FrameIndex]->Reset()
 	);
 	DX::ThrowIfFailed(CALL_INFO,
-		m_CommandList->Reset(m_CommandAllocator[m_FrameIndex], m_PipelineStateObject)
+		m_dxo.CommandList->Reset(m_CommandAllocator[m_FrameIndex], m_PipelineStateObject)
 	);
 
-	m_CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_RenderTarget[m_FrameIndex], D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
+	m_dxo.CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_dxo.RenderTarget[m_FrameIndex].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), m_FrameIndex, m_RTVDescriptorSize);
-	m_CommandList->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
+	m_dxo.CommandList->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
 	
 	const float clearColor[] = { 0.2f, 0.2f, 0.2f, 1.0f };
-	m_CommandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+	m_dxo.CommandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
 
 	/*绘制三角形*/
-	m_CommandList->SetGraphicsRootSignature(m_RootSignature);
-	m_CommandList->RSSetViewports(1, &m_ViewPort);
-	m_CommandList->RSSetScissorRects(1, &m_ScissorRect);
-	m_CommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	m_CommandList->IASetVertexBuffers(0, 1, &m_VBView);
-	m_CommandList->IASetIndexBuffer(&m_IBView);
-	m_CommandList->DrawIndexedInstanced(6, 1, 0, 0, 0);
+	m_dxo.CommandList->SetGraphicsRootSignature(m_RootSignature);
+	m_dxo.CommandList->RSSetViewports(1, &m_ViewPort);
+	m_dxo.CommandList->RSSetScissorRects(1, &m_ScissorRect);
+	m_dxo.CommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	m_dxo.CommandList->IASetVertexBuffers(0, 1, &m_VBView);
+	m_dxo.CommandList->IASetIndexBuffer(&m_IBView);
+	m_dxo.CommandList->DrawIndexedInstanced(6, 1, 0, 0, 0);
 
 
-	m_CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_RenderTarget[m_FrameIndex], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
+	m_dxo.CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_dxo.RenderTarget[m_FrameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
 
 	DX::ThrowIfFailed(CALL_INFO,
-		m_CommandList->Close()
+		m_dxo.CommandList->Close()
 	);
 
 }
@@ -431,7 +431,7 @@ void App::Render()
 {
 	UpdateTriangle(); //test
 
-	ID3D12CommandList* ppCommandLists[] = { m_CommandList };
+	ID3D12CommandList* ppCommandLists[] = { m_dxo.CommandList.Get() };
 
 	m_CommandQueue->ExecuteCommandLists(1, ppCommandLists);
 
@@ -440,7 +440,7 @@ void App::Render()
 	);
 
 	DX::ThrowIfFailed(CALL_INFO, 
-		m_SwapChain->Present(0, 0)
+		m_dxo.SwapChain->Present(0, 0)
 	);
 
 
@@ -455,19 +455,19 @@ void App::CleanUp()
 	}
 
 	BOOL fs = false;
-	if (m_SwapChain->GetFullscreenState(&fs, NULL))
-		m_SwapChain->SetFullscreenState(false, NULL);
+	if (m_dxo.SwapChain->GetFullscreenState(&fs, NULL))
+		m_dxo.SwapChain->SetFullscreenState(false, NULL);
 
-	if (m_device)m_device->Release();
-	m_SwapChain->Release();
+	if (m_dxo.Device)m_dxo.Device.Reset();
+	m_dxo.SwapChain.Reset();
 	m_CommandQueue->Release();
 	m_rtvDescriptorHeap->Release();
-	m_CommandList->Release();
+	m_dxo.CommandList.Reset();
 	m_IB->Release();
 
 	for (int i = 0; i < frameBufferCount; ++i)
 	{
-		m_RenderTarget[i]->Release();
+		m_dxo.RenderTarget[i].Reset();
 		m_CommandAllocator[i]->Release();
 		m_Fence[i]->Release();
 	};
@@ -478,7 +478,7 @@ void App::CleanUp()
 
 void App::WaitForPreviousFrame()
 {
-	m_FrameIndex = m_SwapChain->GetCurrentBackBufferIndex();
+	m_FrameIndex = m_dxo.SwapChain->GetCurrentBackBufferIndex();
 
 	if (m_Fence[m_FrameIndex]->GetCompletedValue() < m_FenceValue[m_FrameIndex])
 	{
