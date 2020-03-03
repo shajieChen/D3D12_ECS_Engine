@@ -7,7 +7,9 @@ namespace Graphic
 	struct AttributeBuffer
 	{
 		Microsoft::WRL::ComPtr<ID3D12Resource> buffer; 
-
+		unsigned int stride = 0;
+		unsigned int count = 0;
+		unsigned int byteWidth = 0;
 	};
 
 	struct VertexBuffer

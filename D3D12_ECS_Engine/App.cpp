@@ -21,9 +21,13 @@ LRESULT CALLBACK WndProMessage(HWND hWnd, UINT msg, WPARAM wParam , LPARAM lPara
 App::App(HINSTANCE hInstance, int ShowWnd, int width, int height, bool fullScreen)
 {
 	instance = this;
-	this->InitializeWind(hInstance, ShowWnd, width, height, fullScreen); 
+	this->InitMainWindow(hInstance, ShowWnd, width, height, fullScreen);
 	this->InitD3D12(); 
 	this->InitWindow(hInstance);
+	this->OnResize();
+
+	m_ct.rcommand = std::make_unique<RenderCommand>(m_dxo);
+
 	this->testGrawTriangle();
 }
 
@@ -32,7 +36,7 @@ App::~App()
 	CleanUp(); 
 }
 
-void App::InitializeWind(HINSTANCE hInstance, int ShowWnd, int width, int height, bool isfullScreen)
+void App::InitMainWindow(HINSTANCE hInstance, int ShowWnd, int width, int height, bool isfullScreen)
 {
 	m_Width = width;
 	is_FullScreen = isfullScreen;
@@ -56,7 +60,12 @@ void App::InitializeWind(HINSTANCE hInstance, int ShowWnd, int width, int height
 	wndClass.hCursor = LoadCursor(NULL, IDC_ARROW);
 	wndClass.hbrBackground = (HBRUSH)COLOR_WINDOW;
 	wndClass.lpszClassName = WinsName;
-	RegisterClassEx(&wndClass);
+	if (!RegisterClassEx(&wndClass))
+	{
+		MessageBox(0, L"RegisterClass Failed.", 0, 0);
+		return;
+	}
+
 	RECT clientRect;
 	SetRect(&clientRect, 0, 0, width, height);
 	AdjustWindowRect(
@@ -80,7 +89,11 @@ void App::InitializeWind(HINSTANCE hInstance, int ShowWnd, int width, int height
 		0,
 		hInstance,
 		0);
-
+	if (!hWnd)
+	{
+		MessageBox(0, L"CreateWindow Failed.", 0, 0);
+		return;
+	}
 	if (isfullScreen)
 	{
 		SetWindowLong(hWnd, GWL_STYLE, 0);
@@ -90,17 +103,28 @@ void App::InitializeWind(HINSTANCE hInstance, int ShowWnd, int width, int height
 }
 void App::InitD3D12()
 {	
+#if defined(NDEBUG) || defined(_NDEBUG) 
+	// 开启D3D12的Debug层
+	{
+		Microsoft::WRL::ComPtr<ID3D12Debug> debugController;
+		DX::ThrowIfFailed(CALL_INFO,  
+			D3D12GetDebugInterface(IID_PPV_ARGS(&debugController))
+		); 
+		debugController->EnableDebugLayer();
+	}
+#endif 
+
 	/*用于创建之后的交换链接口以及枚举适配器*/
-	IDXGIFactory4* dxgiFactory;
+	
 	DX::ThrowIfFailed(CALL_INFO, 
-		CreateDXGIFactory1(IID_PPV_ARGS(&dxgiFactory))
+		CreateDXGIFactory1(IID_PPV_ARGS(&m_DXGIFactory))
 	);
 
 	/*枚举适配器*/
 	IDXGIAdapter1* adapter;
 	int adapterIndex = 0;
 	bool adapterFound = false; 
-	while (dxgiFactory->EnumAdapters1(adapterIndex, &adapter) != DXGI_ERROR_NOT_FOUND)
+	while (m_DXGIFactory->EnumAdapters1(adapterIndex, &adapter) != DXGI_ERROR_NOT_FOUND)
 	{
 		DXGI_ADAPTER_DESC1 desc;
 		adapter->GetDesc1(&desc);
@@ -122,83 +146,16 @@ void App::InitD3D12()
 	if (!adapterFound)
 	{
 		return;
-	}
-
+	} 
 
 	/*创建Device*/
 	DX::ThrowIfFailed(CALL_INFO , 
 		D3D12CreateDevice(adapter,D3D_FEATURE_LEVEL_11_0,IID_PPV_ARGS(&m_dxo.Device))
 	);
+	CreateCommandObjects();
+	CreateSwapChain();
+	CreateRtvAndDsvDescriptorHeaps();
 
-	/*创建GPUCommandQueue*/
-	D3D12_COMMAND_QUEUE_DESC cqDesc = {}; 
-	DX::ThrowIfFailed(CALL_INFO ,
-		m_dxo.Device->CreateCommandQueue(&cqDesc , IID_PPV_ARGS(&m_CommandQueue))
-	);
-
-	/*创建Swapchain*/
-	DXGI_MODE_DESC backBufferDesc = {};
-	backBufferDesc.Width = m_Width;
-	backBufferDesc.Height = m_Height;
-	backBufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	DXGI_SAMPLE_DESC sampleDesc = {};
-	sampleDesc.Count = 1;
-
-	DXGI_SWAP_CHAIN_DESC swapChainDesc = {}; 
-	swapChainDesc.BufferCount = FrameBufferCount; //添加三重缓冲
-	swapChainDesc.BufferDesc = backBufferDesc; 
-	swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT; //指定流水线渲染buffer 
-	swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD; 
-	swapChainDesc.OutputWindow = hWnd; 
-	swapChainDesc.SampleDesc = sampleDesc; 
-	swapChainDesc.Windowed = !is_FullScreen; 
-
-	IDXGISwapChain* tmpSwapChain; 
-
-	DX::ThrowIfFailed(CALL_INFO, 
-		dxgiFactory->CreateSwapChain(m_CommandQueue, 
-									&swapChainDesc ,
-									&tmpSwapChain)
-	);
-	m_dxo.SwapChain = static_cast<IDXGISwapChain3*>(tmpSwapChain);
-
-
-	/*描述符堆*/
-	m_FrameIndex = m_dxo.SwapChain->GetCurrentBackBufferIndex();
-		//RTV
-	D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {}; 
-	rtvHeapDesc.NumDescriptors = FrameBufferCount; 
-	rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV; 
-	rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE; 
-	DX::ThrowIfFailed(CALL_INFO, 
-		m_dxo.Device->CreateDescriptorHeap(&rtvHeapDesc , IID_PPV_ARGS(&m_rtvDescriptorHeap))
-	);
-	m_RTVDescriptorSize = m_dxo.Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-	
-	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());;
-
-	for (int i = 0; i < FrameBufferCount; i++)
-	{
-		DX::ThrowIfFailed(CALL_INFO,
-			m_dxo.SwapChain->GetBuffer(i, IID_PPV_ARGS(&m_dxo.RenderTarget[i]))
-		);
-		m_dxo.Device->CreateRenderTargetView(m_dxo.RenderTarget[i].Get() , nullptr, rtvHandle);
-
-		rtvHandle.Offset(1, m_RTVDescriptorSize);
-	}
-
-	/*CommandAllocator*/
-	for (int i = 0; i < FrameBufferCount; i++)
-	{
-		DX::ThrowIfFailed(CALL_INFO,
-			m_dxo.Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_CommandAllocator[i]))
-		);
-	}
-
-	/*CPUCommandlist*/
-	DX::ThrowIfFailed(CALL_INFO,  
-		m_dxo.Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT , m_CommandAllocator[0] , NULL, IID_PPV_ARGS(&m_dxo.CommandList))
-	); 
 
 	/*CPUFence*/
 	for (int i = 0; i < FrameBufferCount; i++)
@@ -460,8 +417,8 @@ void App::CleanUp()
 
 	if (m_dxo.Device)m_dxo.Device.Reset();
 	m_dxo.SwapChain.Reset();
-	m_CommandQueue->Release();
-	m_rtvDescriptorHeap->Release();
+	m_CommandQueue.Reset();
+	m_rtvDescriptorHeap.Reset();
 	m_dxo.CommandList.Reset();
 	m_IB->Release();
 
@@ -474,6 +431,15 @@ void App::CleanUp()
 	m_PipelineStateObject->Release();
 	m_RootSignature->Release();
 	m_VB->Release();
+}
+
+void App::OnResize()
+{
+	assert(m_dxo.Device);
+	assert(m_dxo.SwapChain);
+	assert(m_CommandAllocator);
+
+	WaitForPreviousFrame(); 
 }
 
 void App::WaitForPreviousFrame()
@@ -491,6 +457,94 @@ void App::WaitForPreviousFrame()
 	m_FenceValue[m_FrameIndex]++;
 }
 
+void App::CreateRtvAndDsvDescriptorHeaps()
+{ 
+	/*RTV描述符堆*/
+	m_FrameIndex = m_dxo.SwapChain->GetCurrentBackBufferIndex();
+	//RTV
+	D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
+	rtvHeapDesc.NumDescriptors = FrameBufferCount;
+	rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+	rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+	DX::ThrowIfFailed(CALL_INFO,
+		m_dxo.Device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&m_rtvDescriptorHeap))
+	);
+	m_RTVDescriptorSize = m_dxo.Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+
+	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());;
+
+	for (int i = 0; i < FrameBufferCount; i++)
+	{
+		DX::ThrowIfFailed(CALL_INFO,
+			m_dxo.SwapChain->GetBuffer(i, IID_PPV_ARGS(&m_dxo.RenderTarget[i]))
+		);
+		m_dxo.Device->CreateRenderTargetView(m_dxo.RenderTarget[i].Get(), nullptr, rtvHandle);
+
+		rtvHandle.Offset(1, m_RTVDescriptorSize);
+	} 
+
+	/*DSV*/ 
+	D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc;
+	dsvHeapDesc.NumDescriptors = 1;
+	dsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
+	dsvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+	dsvHeapDesc.NodeMask = 0;
+	DX::ThrowIfFailed(CALL_INFO,
+		m_dxo.Device->CreateDescriptorHeap(
+		&dsvHeapDesc, IID_PPV_ARGS(m_dsvDescriptorHeap.GetAddressOf())));
+}
+
+void App::CreateSwapChain()
+{ 
+	/*创建Swapchain*/
+	DXGI_MODE_DESC backBufferDesc = {};
+	backBufferDesc.Width = m_Width;
+	backBufferDesc.Height = m_Height;
+	backBufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	DXGI_SAMPLE_DESC sampleDesc = {};
+	sampleDesc.Count = 1;
+
+	DXGI_SWAP_CHAIN_DESC swapChainDesc = {};
+	swapChainDesc.BufferCount = FrameBufferCount; //添加三重缓冲
+	swapChainDesc.BufferDesc = backBufferDesc;
+	swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT; //指定流水线渲染buffer 
+	swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+	swapChainDesc.OutputWindow = hWnd;
+	swapChainDesc.SampleDesc = sampleDesc;
+	swapChainDesc.Windowed = !is_FullScreen;
+
+	IDXGISwapChain* tmpSwapChain;
+
+	DX::ThrowIfFailed(CALL_INFO,
+		m_DXGIFactory->CreateSwapChain(m_CommandQueue.Get(),
+			&swapChainDesc,
+			&tmpSwapChain)
+	);
+	m_dxo.SwapChain = static_cast<IDXGISwapChain3*>(tmpSwapChain);
+}
+
+void App::CreateCommandObjects()
+{ 
+	/*创建GPUCommandQueue*/
+	D3D12_COMMAND_QUEUE_DESC cqDesc = {};
+	DX::ThrowIfFailed(CALL_INFO,
+		m_dxo.Device->CreateCommandQueue(&cqDesc, IID_PPV_ARGS(&m_CommandQueue))
+	); 
+
+	/*CommandAllocator*/
+	for (int i = 0; i < FrameBufferCount; i++)
+	{
+		DX::ThrowIfFailed(CALL_INFO,
+			m_dxo.Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_CommandAllocator[i]))
+		);
+	} 
+
+	/*CPUCommandlist*/
+	DX::ThrowIfFailed(CALL_INFO,
+		m_dxo.Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_CommandAllocator[0], NULL, IID_PPV_ARGS(&m_dxo.CommandList))
+	); 
+}
+ 
 void App::Run(std::function<void(App*)> callBack)
 {
 	MSG msg = {};
