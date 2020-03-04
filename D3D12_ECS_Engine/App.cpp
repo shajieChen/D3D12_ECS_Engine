@@ -21,14 +21,14 @@ LRESULT CALLBACK WndProMessage(HWND hWnd, UINT msg, WPARAM wParam , LPARAM lPara
 App::App(HINSTANCE hInstance, int ShowWnd, int width, int height, bool fullScreen)
 {
 	instance = this;
-	this->InitMainWindow(hInstance, ShowWnd, width, height, fullScreen);
-	this->InitD3D12(); 
-	this->InitWindow(hInstance);
-	this->OnResize();
-
-	m_ct.rcommand = std::make_unique<RenderCommand>(m_dxo);
+	this->InitMainWindow(hInstance, ShowWnd, width, height, fullScreen); 
+	this->InitD3D12();  
+	this->InitWindow(hInstance); 
+	this->OnResize(); 
+	m_ct.rcommand = std::make_unique<RenderCommand>(m_dxo); 
 
 	this->testGrawTriangle();
+
 }
 
 App::~App()
@@ -176,8 +176,37 @@ void App::InitD3D12()
 
 void App::InitWindow(HINSTANCE& hInstance)
 {
+	D3D12_DESCRIPTOR_RANGE  descriptorTableRanges[1];/*TODO: 修改1 避免Magic Number */
+	descriptorTableRanges[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
+	descriptorTableRanges[0].NumDescriptors = 1;
+	descriptorTableRanges[0].BaseShaderRegister = 0; 
+	descriptorTableRanges[0].RegisterSpace = 0;
+	descriptorTableRanges[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
+	/*创建描述符表*/
+	D3D12_ROOT_DESCRIPTOR_TABLE descriptorTable;
+	descriptorTable.NumDescriptorRanges = _countof(descriptorTableRanges); 
+	descriptorTable.pDescriptorRanges = &descriptorTableRanges[0];
+
+	D3D12_ROOT_PARAMETER  rootParameters[1];
+	rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; 
+	rootParameters[0].DescriptorTable = descriptorTable; 
+	rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;  
+
+	 
+	/*创建根签名*/
 	CD3DX12_ROOT_SIGNATURE_DESC rootSignatureDesc;  
-	rootSignatureDesc.Init(0, nullptr, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+	//rootSignatureDesc.Init(0, nullptr, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+	rootSignatureDesc.Init(_countof(rootParameters),
+		rootParameters, 
+		0,
+		nullptr,
+		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT | 
+		D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
+		D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
+		D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS |
+		D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS);
+
 
 	ID3DBlob* signature; 
 	D3D12SerializeRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, nullptr);
@@ -242,15 +271,17 @@ void App::testGrawTriangle()
 	psoDesc.SampleMask = 0xffffffff; 
 	psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT); 
 	psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
-	psoDesc.NumRenderTargets = 1; 
+	psoDesc.NumRenderTargets = 1; 	
+	psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
 
 	m_dxo.Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_PipelineStateObject));
 
 	//vb 
 	Vertex vList[] = {
-		{ 0.0f, 0.5f, 0.5f, 0.2f, 0.2f, 0.2f, 1.0f },
-		{ 0.5f, -0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 1.0f },
+		{ -0.5f,  0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 1.0f },
+		{ 0.5f, -0.5f, 0.5f, 1.0f, 0.0f, 1.0f, 1.0f },
 		{ -0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 1.0f },
+		{ 0.5f,  0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 1.0f }
 	};
 	int vBufferSize = sizeof(vList);
 
@@ -263,6 +294,7 @@ void App::testGrawTriangle()
 		IID_PPV_ARGS(&m_VB));
 		m_VB->SetName(L"Vertex Buffer Resource Heap");
 
+
 	/*创建上传缓冲区*/
 	ID3D12Resource* vBufferUploadHeap;
 	m_dxo.Device->CreateCommittedResource
@@ -272,7 +304,9 @@ void App::testGrawTriangle()
 		&CD3DX12_RESOURCE_DESC::Buffer(vBufferSize), 
 		D3D12_RESOURCE_STATE_GENERIC_READ, 
 		nullptr,
-		IID_PPV_ARGS(&vBufferUploadHeap));
+		IID_PPV_ARGS(&vBufferUploadHeap)
+	);
+
 		vBufferUploadHeap->SetName(L"Vertex Buffer Upload Resource Heap");
 
 		//传输到上传缓冲区 
@@ -283,7 +317,7 @@ void App::testGrawTriangle()
 	UpdateSubresources(m_dxo.CommandList.Get(), m_VB, vBufferUploadHeap, 0, 0, 1, &vertexData);
 
 	m_dxo.CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_VB, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
-
+	 
 	//创建VBView 
 	m_VBView.BufferLocation = m_VB->GetGPUVirtualAddress();
 	m_VBView.StrideInBytes = sizeof(Vertex);
@@ -315,7 +349,7 @@ void App::testGrawTriangle()
 		D3D12_RESOURCE_STATE_GENERIC_READ, 
 		nullptr,
 		IID_PPV_ARGS(&iBufferUploadHeap));
-	vBufferUploadHeap->SetName(L"Index Buffer Upload Resource Heap");
+	iBufferUploadHeap->SetName(L"Index Buffer Upload Resource Heap");
 
 	D3D12_SUBRESOURCE_DATA indexData = {};
 	indexData.pData = reinterpret_cast<BYTE*>(iList);
@@ -328,13 +362,78 @@ void App::testGrawTriangle()
 
 	m_IBView.BufferLocation = m_IB->GetGPUVirtualAddress();
 	m_IBView.Format = DXGI_FORMAT_R32_UINT; // 32-bit unsigned integer (this is what a dword is, double word, a word is 2 bytes)
-	m_IBView.SizeInBytes = iBufferSize;
+	m_IBView.SizeInBytes = iBufferSize; 
+	/*创建Stencil DepthBuffer View*/
+	D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc = {};
+	dsvHeapDesc.NumDescriptors = 1;
+	dsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
+	dsvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+	m_dxo.Device->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&dsDescriptorHeap));
 
+	D3D12_DEPTH_STENCIL_VIEW_DESC depthStencilDesc = {};
+	depthStencilDesc.Format = DXGI_FORMAT_D32_FLOAT;
+	depthStencilDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+	depthStencilDesc.Flags = D3D12_DSV_FLAG_NONE;
+
+	D3D12_CLEAR_VALUE depthOptimizedClearValue = {};
+	depthOptimizedClearValue.Format = DXGI_FORMAT_D32_FLOAT;
+	depthOptimizedClearValue.DepthStencil.Depth = 1.0f;
+	depthOptimizedClearValue.DepthStencil.Stencil = 0;
+
+	m_dxo.Device->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+		D3D12_HEAP_FLAG_NONE,
+		&CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_D32_FLOAT, m_Width, m_Height, 1, 0, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL),
+		D3D12_RESOURCE_STATE_DEPTH_WRITE,
+		&depthOptimizedClearValue,
+		IID_PPV_ARGS(&depthStencilBuffer)
+	);
+	m_dxo.Device->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&dsDescriptorHeap));
+
+	dsDescriptorHeap->SetName(L"Depth/Stencil Resource Heap");
+
+	m_dxo.Device->CreateDepthStencilView(depthStencilBuffer.Get(),
+										&depthStencilDesc,
+										dsDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+
+	// 为每一帧都创建一个常量缓冲区描述符
+	for (int i = 0; i < frameBufferCount; ++i)
+	{
+		D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
+		heapDesc.NumDescriptors = 1;
+		heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+		heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV; 
+		m_dxo.Device->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&mainDescriptorHeap[i]));
+	}
+
+	// 创建上传缓冲区(共享缓冲区) --- 包括 resources heap/Descriptor Heap/指向ConstantBufferView的指针
+	for (int i = 0; i < frameBufferCount; ++i)
+	{
+		m_dxo.Device->CreateCommittedResource(
+			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD), //指明为上传缓冲堆
+			D3D12_HEAP_FLAG_NONE, // no flags
+			&CD3DX12_RESOURCE_DESC::Buffer(1024 * 64), //资源堆的大小必须为64KB的大小的倍数
+			D3D12_RESOURCE_STATE_GENERIC_READ, 
+			nullptr, 
+			IID_PPV_ARGS(&constantBufferUploadHeap[i]));
+		constantBufferUploadHeap[i]->SetName(L"常量缓冲区的上传缓冲堆");
+
+		D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
+		cbvDesc.BufferLocation = constantBufferUploadHeap[i]->GetGPUVirtualAddress();
+		cbvDesc.SizeInBytes = (sizeof(ConstantBuffer) + 255) & ~255;    //按照256字节排布
+		m_dxo.Device->CreateConstantBufferView(&cbvDesc, mainDescriptorHeap[i]->GetCPUDescriptorHandleForHeapStart());
+
+		ZeroMemory(&cbColorMultiplierData, sizeof(cbColorMultiplierData));
+
+		CD3DX12_RANGE readRange(0, 0);    // We do not intend to read from this resource on the CPU. (End is less than or equal to begin)
+		constantBufferUploadHeap[i]->Map(0, &readRange, reinterpret_cast<void**>(&cbColorMultiplierGPUAddress[i]));
+		memcpy(cbColorMultiplierGPUAddress[i], &cbColorMultiplierData, sizeof(cbColorMultiplierData));
+	} 
 
 
 	m_dxo.CommandList->Close();
 	ID3D12CommandList* ppCommandLists[] = { m_dxo.CommandList.Get() };
-	m_CommandQueue->ExecuteCommandLists(1, ppCommandLists);
+	m_CommandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
 
 	//添加m_Fence 保证再会之前
 	m_FenceValue[m_FrameIndex]++;
@@ -357,13 +456,20 @@ void App::UpdateTriangle()
 
 	m_dxo.CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_dxo.RenderTarget[m_FrameIndex].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), m_FrameIndex, m_RTVDescriptorSize);
-	m_dxo.CommandList->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
+	CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle(dsDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+	m_dxo.CommandList->OMSetRenderTargets(1, &rtvHandle, FALSE, &dsvHandle);
 	
 	const float clearColor[] = { 0.2f, 0.2f, 0.2f, 1.0f };
 	m_dxo.CommandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
-
-	/*绘制三角形*/
+	m_dxo.CommandList->ClearDepthStencilView(dsDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+	/*开始绘制*/ 	
 	m_dxo.CommandList->SetGraphicsRootSignature(m_RootSignature);
+
+	ID3D12DescriptorHeap* descriptorHeaps[] = { mainDescriptorHeap[m_FrameIndex] };
+	m_dxo.CommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
+	 
+	m_dxo.CommandList->SetGraphicsRootDescriptorTable(0, mainDescriptorHeap[m_FrameIndex]->GetGPUDescriptorHandleForHeapStart());
+
 	m_dxo.CommandList->RSSetViewports(1, &m_ViewPort);
 	m_dxo.CommandList->RSSetScissorRects(1, &m_ScissorRect);
 	m_dxo.CommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -382,15 +488,40 @@ void App::UpdateTriangle()
 
 void App::Update() 
 {
+	static float rIncrement = 0.00002f;
+	static float gIncrement = 0.00006f;
+	static float bIncrement = 0.00009f;
+	
+	cbColorMultiplierData.colorMultiplier.x += rIncrement;
+	cbColorMultiplierData.colorMultiplier.y += gIncrement;
+	cbColorMultiplierData.colorMultiplier.z += bIncrement;
+
+	if (cbColorMultiplierData.colorMultiplier.x >= 1.0 || cbColorMultiplierData.colorMultiplier.x <= 0.0)
+	{
+		cbColorMultiplierData.colorMultiplier.x = cbColorMultiplierData.colorMultiplier.x >= 1.0 ? 1.0 : 0.0;
+		rIncrement = -rIncrement;
+	}
+	if (cbColorMultiplierData.colorMultiplier.y >= 1.0 || cbColorMultiplierData.colorMultiplier.y <= 0.0)
+	{
+		cbColorMultiplierData.colorMultiplier.y = cbColorMultiplierData.colorMultiplier.y >= 1.0 ? 1.0 : 0.0;
+		gIncrement = -gIncrement;
+	}
+	if (cbColorMultiplierData.colorMultiplier.z >= 1.0 || cbColorMultiplierData.colorMultiplier.z <= 0.0)
+	{
+		cbColorMultiplierData.colorMultiplier.z = cbColorMultiplierData.colorMultiplier.z >= 1.0 ? 1.0 : 0.0;
+		bIncrement = -bIncrement;
+	}
+
+	//map/UnMap 动态缓冲区
+	memcpy(cbColorMultiplierGPUAddress[m_FrameIndex], &cbColorMultiplierData, sizeof(cbColorMultiplierData));
 }
 
 void App::Render()
 {
 	UpdateTriangle(); //test
-
 	ID3D12CommandList* ppCommandLists[] = { m_dxo.CommandList.Get() };
-
-	m_CommandQueue->ExecuteCommandLists(1, ppCommandLists);
+	 
+	m_CommandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
 
 	DX::ThrowIfFailed(CALL_INFO,  
 		m_CommandQueue->Signal(m_Fence[m_FrameIndex], m_FenceValue[m_FrameIndex])
@@ -427,10 +558,16 @@ void App::CleanUp()
 		m_dxo.RenderTarget[i].Reset();
 		m_CommandAllocator[i]->Release();
 		m_Fence[i]->Release();
+		mainDescriptorHeap[i]->Release();
+		constantBufferUploadHeap[i]->Release();
+
 	};
 	m_PipelineStateObject->Release();
 	m_RootSignature->Release();
 	m_VB->Release();
+
+	depthStencilBuffer.Reset();
+	dsDescriptorHeap.Reset();
 }
 
 void App::OnResize()
@@ -471,7 +608,8 @@ void App::CreateRtvAndDsvDescriptorHeaps()
 	);
 	m_RTVDescriptorSize = m_dxo.Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
-	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());;
+	//CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());;
+	auto rtvHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(m_rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 
 	for (int i = 0; i < FrameBufferCount; i++)
 	{
@@ -545,7 +683,7 @@ void App::CreateCommandObjects()
 	); 
 }
  
-void App::Run(std::function<void(App*)> callBack)
+void App::Run(std::function<void(App*)> app)
 {
 	MSG msg = {};
 	while (msg.message != WM_QUIT)
@@ -557,10 +695,12 @@ void App::Run(std::function<void(App*)> callBack)
 		}
 		else
 		{
-			if (callBack)
+			if (app)
 			{
-				callBack(this);
-			}
+				app(this);
+			} 
+			Update(); 
+			//绘制
 			Render();
 		}
 	}

@@ -1,3 +1,8 @@
+cbuffer ConstantBuffer : register(b0)
+{
+	float4 colorMultiplier;
+};
+
 struct VertexInput
 {
 	float3 pos : POSITION;
@@ -10,10 +15,11 @@ struct VertexOutput
 	float4 color: COLOR;
 };
 
+
 VertexOutput main(VertexInput input)
 {
 	VertexOutput output;
 	output.pos = float4(input.pos, 1.0f);
-	output.color = input.color;
+	output.color = input.color * colorMultiplier;
 	return output;
 }

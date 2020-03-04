@@ -4,6 +4,7 @@
 #include "Vertex.h"
 #include "DXObjects.h"
 #include "SContext.h"
+#include "SConstantBuffer.h"
 #ifndef APP_H
 #define APP_H
 
@@ -74,6 +75,18 @@ private:
 	ID3D12Fence* m_Fence[FrameBufferCount];
 	HANDLE m_FenceEvent;
 	UINT64 m_FenceValue[FrameBufferCount];
+
+	Microsoft::WRL::ComPtr <ID3D12Resource> depthStencilBuffer;
+	Microsoft::WRL::ComPtr <ID3D12DescriptorHeap> dsDescriptorHeap;					//深度模板的描述符缓冲堆
+
+	ID3D12DescriptorHeap* mainDescriptorHeap[FrameBufferCount];						// 用于存储描述符的缓冲堆
+	ID3D12Resource* constantBufferUploadHeap[FrameBufferCount];						//每一帧上面都有特定的共享内存Buffer来进行传输CPU 端上的ConstantBuffer 
+
+	ConstantBuffer cbColorMultiplierData;											//用于vs中的VB/IB 和PS 中的颜色变化传入Buffer 
+
+	UINT8* cbColorMultiplierGPUAddress[FrameBufferCount];							// this is a pointer to the memory location we get when we map our constant buffer
+
+
 #pragma endregion
 	/*屏幕*/
 	ID3D12PipelineState* m_PipelineStateObject;

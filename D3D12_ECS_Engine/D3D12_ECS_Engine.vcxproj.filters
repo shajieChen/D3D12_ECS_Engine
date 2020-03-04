@@ -86,6 +86,9 @@
     <ClInclude Include="SContext.h">
       <Filter>源文件\Core\Core_Graphic</Filter>
     </ClInclude>
+    <ClInclude Include="SConstantBuffer.h">
+      <Filter>源文件\Core\Core_Graphic</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="DefaultVS.hlsl">

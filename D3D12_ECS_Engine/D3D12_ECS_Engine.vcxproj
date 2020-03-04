@@ -155,6 +155,7 @@
     <ClInclude Include="DXException.h" />
     <ClInclude Include="DXObjects.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="SConstantBuffer.h" />
     <ClInclude Include="SContext.h" />
     <ClInclude Include="SMesh.h" />
     <ClInclude Include="StepTimer.h" />
