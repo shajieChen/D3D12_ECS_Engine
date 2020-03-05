@@ -34,6 +34,9 @@
     <Filter Include="源文件\Core\test">
       <UniqueIdentifier>{5c08c3af-51d0-4354-bf23-f6f82cb6e2f5}</UniqueIdentifier>
     </Filter>
+    <Filter Include="头文件\Entt_H">
+      <UniqueIdentifier>{c96b594b-f241-42d9-ab65-0a39b45c81d2}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="WinMain.cpp">
@@ -88,6 +91,123 @@
     </ClInclude>
     <ClInclude Include="SConstantBuffer.h">
       <Filter>源文件\Core\Core_Graphic</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\entt\entity\actor.hpp">
+      <Filter>头文件\Entt_H</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\entt\core\algorithm.hpp">
+      <Filter>头文件\Entt_H</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\entt\resource\cache.hpp">
+      <Filter>头文件\Entt_H</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\entt\config\config.h">
+      <Filter>头文件\Entt_H</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\entt\signal\delegate.hpp">
+      <Filter>头文件\Entt_H</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\entt\signal\dispatcher.hpp">
+      <Filter>头文件\Entt_H</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\entt\signal\emitter.hpp">
+      <Filter>头文件\Entt_H</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\entt\entity\entity.hpp">
+      <Filter>头文件\Entt_H</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\entt\entt.hpp">
+      <Filter>头文件\Entt_H</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\entt\meta\factory.hpp">
+      <Filter>头文件\Entt_H</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\entt\core\family.hpp">
+      <Filter>头文件\Entt_H</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\entt\entity\fwd.hpp">
+      <Filter>头文件\Entt_H</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\entt\fwd.hpp">
+      <Filter>头文件\Entt_H</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\entt\resource\fwd.hpp">
+      <Filter>头文件\Entt_H</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\entt\signal\fwd.hpp">
+      <Filter>头文件\Entt_H</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\entt\entity\group.hpp">
+      <Filter>头文件\Entt_H</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\entt\resource\handle.hpp">
+      <Filter>头文件\Entt_H</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\entt\core\hashed_string.hpp">
+      <Filter>头文件\Entt_H</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\entt\entity\helper.hpp">
+      <Filter>头文件\Entt_H</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\entt\core\ident.hpp">
+      <Filter>头文件\Entt_H</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\entt\resource\loader.hpp">
+      <Filter>头文件\Entt_H</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\entt\locator\locator.hpp">
+      <Filter>头文件\Entt_H</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\entt\meta\meta.hpp">
+      <Filter>头文件\Entt_H</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\entt\core\monostate.hpp">
+      <Filter>头文件\Entt_H</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\entt\entity\observer.hpp">
+      <Filter>头文件\Entt_H</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\entt\meta\policy.hpp">
+      <Filter>头文件\Entt_H</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\entt\process\process.hpp">
+      <Filter>头文件\Entt_H</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\entt\entity\registry.hpp">
+      <Filter>头文件\Entt_H</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\entt\entity\runtime_view.hpp">
+      <Filter>头文件\Entt_H</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\entt\process\scheduler.hpp">
+      <Filter>头文件\Entt_H</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\entt\signal\sigh.hpp">
+      <Filter>头文件\Entt_H</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\entt\entity\snapshot.hpp">
+      <Filter>头文件\Entt_H</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\entt\entity\sparse_set.hpp">
+      <Filter>头文件\Entt_H</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\entt\entity\storage.hpp">
+      <Filter>头文件\Entt_H</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\entt\core\type_traits.hpp">
+      <Filter>头文件\Entt_H</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\entt\core\utility.hpp">
+      <Filter>头文件\Entt_H</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\entt\entity\utility.hpp">
+      <Filter>头文件\Entt_H</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\entt\config\version.h">
+      <Filter>头文件\Entt_H</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\entt\entity\view.hpp">
+      <Filter>头文件\Entt_H</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
