@@ -25,6 +25,9 @@ protected: /*Private Helper Method*/
 	void InitD3D12();
 	void InitMainWindow(HINSTANCE hInstance, int ShowWnd, int width, int height, bool isfullScreen);
 	void InitWindow(HINSTANCE& hInstance); 
+	void BuildRootSignature();
+
+
 	void testGrawTriangle();  /*deletable */
 	void UpdateTriangle(); /*deletable*/
 	 

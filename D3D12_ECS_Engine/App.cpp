@@ -152,10 +152,11 @@ void App::InitD3D12()
 	DX::ThrowIfFailed(CALL_INFO , 
 		D3D12CreateDevice(adapter,D3D_FEATURE_LEVEL_11_0,IID_PPV_ARGS(&m_dxo.Device))
 	);
+
 	CreateCommandObjects();
 	CreateSwapChain();
-	CreateRtvAndDsvDescriptorHeaps();
-
+	CreateRtvAndDsvDescriptorHeaps(); 
+	BuildRootSignature();
 
 	/*CPUFence*/
 	for (int i = 0; i < FrameBufferCount; i++)
@@ -176,42 +177,6 @@ void App::InitD3D12()
 
 void App::InitWindow(HINSTANCE& hInstance)
 {
-	D3D12_DESCRIPTOR_RANGE  descriptorTableRanges[1];/*TODO: 修改1 避免Magic Number */
-	descriptorTableRanges[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
-	descriptorTableRanges[0].NumDescriptors = 1;
-	descriptorTableRanges[0].BaseShaderRegister = 0; 
-	descriptorTableRanges[0].RegisterSpace = 0;
-	descriptorTableRanges[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
-
-	/*创建描述符表*/
-	D3D12_ROOT_DESCRIPTOR_TABLE descriptorTable;
-	descriptorTable.NumDescriptorRanges = _countof(descriptorTableRanges); 
-	descriptorTable.pDescriptorRanges = &descriptorTableRanges[0];
-
-	D3D12_ROOT_PARAMETER  rootParameters[1];
-	rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; 
-	rootParameters[0].DescriptorTable = descriptorTable; 
-	rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;  
-
-	 
-	/*创建根签名*/
-	CD3DX12_ROOT_SIGNATURE_DESC rootSignatureDesc;  
-	//rootSignatureDesc.Init(0, nullptr, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
-	rootSignatureDesc.Init(_countof(rootParameters),
-		rootParameters, 
-		0,
-		nullptr,
-		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT | 
-		D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
-		D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
-		D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS |
-		D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS);
-
-
-	ID3DBlob* signature; 
-	D3D12SerializeRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, nullptr);
-	m_dxo.Device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&m_RootSignature));
-
 	//填充m_ViewPort
 	m_ViewPort.TopLeftX = 0;
 	m_ViewPort.TopLeftY = 0;
@@ -225,6 +190,60 @@ void App::InitWindow(HINSTANCE& hInstance)
 	m_ScissorRect.top = 0;
 	m_ScissorRect.right = m_Width;
 	m_ScissorRect.bottom = m_Height;
+}
+
+void App::BuildRootSignature()
+{
+
+	D3D12_DESCRIPTOR_RANGE  descriptorTableRanges[1];/*TODO: 修改1 避免Magic Number */
+	descriptorTableRanges[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
+	descriptorTableRanges[0].NumDescriptors = 1;
+	descriptorTableRanges[0].BaseShaderRegister = 0;
+	descriptorTableRanges[0].RegisterSpace = 0;
+	descriptorTableRanges[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
+	/*创建描述符表*/
+	D3D12_ROOT_DESCRIPTOR_TABLE descriptorTable;
+	descriptorTable.NumDescriptorRanges = _countof(descriptorTableRanges);
+	descriptorTable.pDescriptorRanges = &descriptorTableRanges[0];
+
+	D3D12_ROOT_PARAMETER  rootParameters[1];
+	rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+	rootParameters[0].DescriptorTable = descriptorTable;
+	rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+
+
+	/*创建根签名*/
+	CD3DX12_ROOT_SIGNATURE_DESC rootSignatureDesc;
+	rootSignatureDesc.Init(_countof(rootParameters),
+		rootParameters,
+		0,
+		nullptr,
+		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
+		D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
+		D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
+		D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS |
+		D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS);
+
+
+	Microsoft::WRL::ComPtr<ID3DBlob> signature;
+	Microsoft::WRL::ComPtr<ID3DBlob> errorBlob = nullptr;
+	DX::ThrowIfFailed(CALL_INFO,
+		D3D12SerializeRootSignature(&rootSignatureDesc,
+			D3D_ROOT_SIGNATURE_VERSION_1,
+			signature.GetAddressOf(),
+			errorBlob.GetAddressOf())
+	);
+	if (errorBlob != nullptr)
+	{
+		::OutputDebugStringA((char*)errorBlob->GetBufferPointer());
+	}
+	DX::ThrowIfFailed(CALL_INFO,
+		m_dxo.Device->CreateRootSignature(0,
+			signature->GetBufferPointer(),
+			signature->GetBufferSize(),
+			IID_PPV_ARGS(&m_RootSignature))
+	);
 }
 
 
@@ -313,15 +332,17 @@ void App::testGrawTriangle()
 	D3D12_SUBRESOURCE_DATA vertexData = {};
 	vertexData.pData = reinterpret_cast<BYTE*>(vList); 
 	vertexData.RowPitch = vBufferSize; 
-	vertexData.SlicePitch = vBufferSize;  
-	UpdateSubresources(m_dxo.CommandList.Get(), m_VB, vBufferUploadHeap, 0, 0, 1, &vertexData);
-
-	m_dxo.CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_VB, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
-	 
+	vertexData.SlicePitch = vBufferSize;
 	//创建VBView 
 	m_VBView.BufferLocation = m_VB->GetGPUVirtualAddress();
 	m_VBView.StrideInBytes = sizeof(Vertex);
 	m_VBView.SizeInBytes = vBufferSize;
+
+	/*TODO : 封装成UpdateConstantBuffer*/
+	UpdateSubresources(m_dxo.CommandList.Get(), m_VB, vBufferUploadHeap, 0, 0, 1, &vertexData);
+
+	m_dxo.CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_VB, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
+	 
 
 	DWORD iList[] = {
 		0, 1, 2,
@@ -356,19 +377,19 @@ void App::testGrawTriangle()
 	indexData.RowPitch = iBufferSize; 
 	indexData.SlicePitch = iBufferSize; 
 
+	m_IBView.BufferLocation = m_IB->GetGPUVirtualAddress();
+	m_IBView.Format = DXGI_FORMAT_R32_UINT; // 32-bit unsigned integer (this is what a dword is, double word, a word is 2 bytes)
+	m_IBView.SizeInBytes = iBufferSize;
+
 	UpdateSubresources(m_dxo.CommandList.Get(), m_IB, iBufferUploadHeap, 0, 0, 1, &indexData);
 
 	m_dxo.CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_IB, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
 
-	m_IBView.BufferLocation = m_IB->GetGPUVirtualAddress();
-	m_IBView.Format = DXGI_FORMAT_R32_UINT; // 32-bit unsigned integer (this is what a dword is, double word, a word is 2 bytes)
-	m_IBView.SizeInBytes = iBufferSize; 
 	/*创建Stencil DepthBuffer View*/
 	D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc = {};
 	dsvHeapDesc.NumDescriptors = 1;
 	dsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
-	dsvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-	m_dxo.Device->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&dsDescriptorHeap));
+	dsvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE; 
 
 	D3D12_DEPTH_STENCIL_VIEW_DESC depthStencilDesc = {};
 	depthStencilDesc.Format = DXGI_FORMAT_D32_FLOAT;
