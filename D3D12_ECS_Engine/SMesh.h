@@ -6,20 +6,26 @@ namespace Graphic
 {
 	struct AttributeBuffer
 	{
-		Microsoft::WRL::ComPtr<ID3D12Resource> buffer; 
-		unsigned int stride = 0;
-		unsigned int count = 0;
-		unsigned int byteWidth = 0;
+		Microsoft::WRL::ComPtr<ID3D12Resource> DataBuffer; 
+		Microsoft::WRL::ComPtr<ID3D12Resource> UploadBuffer; 
+		unsigned int SizeInByte; 
+		unsigned int StrideInByte; 
+		unsigned int ByteWidth;
 	};
+	/*
+	* 关于封装VertexBuffer要点
+	*     创建在默认缓冲堆中的VB
+	*     以及在上传缓冲堆中创建UploadHeap 
 
+	*/
 	struct VertexBuffer
-	{
-
+	{ 
+		std::vector<Microsoft::WRL::ComPtr<D3D12_VERTEX_BUFFER_VIEW>> VBViews; 
 	}; 
 
 	struct IndexBuffer
 	{
-
+		std::vector<Microsoft::WRL::ComPtr<D3D12_INDEX_BUFFER_VIEW>> IBViews;
 	};
 
 	struct Mesh
@@ -27,10 +33,12 @@ namespace Graphic
 		VertexBuffer VB;  
 		IndexBuffer IB;
 
-		/*Material*/
-		unsigned int matType = 0; 
+
+
+
+		/*TODO: Material*/
+		//unsigned int matType = 0; 
 		//.....TODO adding the material Type
 	};
-}
-
+} 
 #endif // !MESH_H

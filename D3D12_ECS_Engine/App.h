@@ -98,7 +98,7 @@ private:
 	D3D12_RECT m_ScissorRect;
 
 	D3D12_VERTEX_BUFFER_VIEW m_VBView; //test
-	ID3D12Resource* m_VB; //test
+	Microsoft::WRL::ComPtr<ID3D12Resource> m_VB; //test
 
 	ID3D12Resource* m_IB; //test
 	D3D12_INDEX_BUFFER_VIEW m_IBView;//test

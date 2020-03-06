@@ -304,44 +304,51 @@ void App::testGrawTriangle()
 	};
 	int vBufferSize = sizeof(vList);
 
-	m_dxo.Device->CreateCommittedResource(
-		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
-		D3D12_HEAP_FLAG_NONE,
-		&CD3DX12_RESOURCE_DESC::Buffer(vBufferSize),
-		D3D12_RESOURCE_STATE_COPY_DEST,
-		nullptr,
-		IID_PPV_ARGS(&m_VB));
-		m_VB->SetName(L"Vertex Buffer Resource Heap");
+	//m_dxo.Device->CreateCommittedResource(
+	//	&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+	//	D3D12_HEAP_FLAG_NONE,
+	//	&CD3DX12_RESOURCE_DESC::Buffer(vBufferSize),
+	//	D3D12_RESOURCE_STATE_COPY_DEST,
+	//	nullptr,
+	//	IID_PPV_ARGS(&m_VB));
+	//	m_VB->SetName(L"Vertex Buffer Resource Heap");
 
 
-	/*创建上传缓冲区*/
-	ID3D12Resource* vBufferUploadHeap;
-	m_dxo.Device->CreateCommittedResource
-	(
-		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
-		D3D12_HEAP_FLAG_NONE,
-		&CD3DX12_RESOURCE_DESC::Buffer(vBufferSize), 
-		D3D12_RESOURCE_STATE_GENERIC_READ, 
-		nullptr,
-		IID_PPV_ARGS(&vBufferUploadHeap)
-	);
+	///*创建上传缓冲区*/
+	//ID3D12Resource* vBufferUploadHeap;
+	//m_dxo.Device->CreateCommittedResource
+	//(
+	//	&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+	//	D3D12_HEAP_FLAG_NONE,
+	//	&CD3DX12_RESOURCE_DESC::Buffer(vBufferSize), 
+	//	D3D12_RESOURCE_STATE_GENERIC_READ, 
+	//	nullptr,
+	//	IID_PPV_ARGS(&vBufferUploadHeap)
+	//);
 
-		vBufferUploadHeap->SetName(L"Vertex Buffer Upload Resource Heap");
+	//	vBufferUploadHeap->SetName(L"Vertex Buffer Upload Resource Heap");
 
-		//传输到上传缓冲区 
-	D3D12_SUBRESOURCE_DATA vertexData = {};
-	vertexData.pData = reinterpret_cast<BYTE*>(vList); 
-	vertexData.RowPitch = vBufferSize; 
-	vertexData.SlicePitch = vBufferSize;
-	//创建VBView 
-	m_VBView.BufferLocation = m_VB->GetGPUVirtualAddress();
-	m_VBView.StrideInBytes = sizeof(Vertex);
-	m_VBView.SizeInBytes = vBufferSize;
+	//	//传输到上传缓冲区 
+	//D3D12_SUBRESOURCE_DATA vertexData = {};
+	//vertexData.pData = reinterpret_cast<BYTE*>(vList); 
+	//vertexData.RowPitch = vBufferSize; 
+	//vertexData.SlicePitch = vBufferSize;
+	////创建VBView 
+	//m_VBView.BufferLocation = m_VB->GetGPUVirtualAddress();
+	//m_VBView.StrideInBytes = sizeof(Vertex);
+	//m_VBView.SizeInBytes = vBufferSize;
 
-	/*TODO : 封装成UpdateConstantBuffer*/
-	UpdateSubresources(m_dxo.CommandList.Get(), m_VB, vBufferUploadHeap, 0, 0, 1, &vertexData);
+	///*TODO : 封装成UploadConstantBuffer*/
+	//UpdateSubresources(m_dxo.CommandList.Get(), m_VB, vBufferUploadHeap, 0, 0, 1, &vertexData);
+	Graphic::AttributeBuffer ab = {}; 
+	ab = m_ct.rcommand->CreateAttributeBuffer(vList , sizeof(vList) , sizeof(Vertex), true);
+	m_VB = ab.DataBuffer;  
 
-	m_dxo.CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_VB, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
+	m_VBView.BufferLocation = ab.DataBuffer->GetGPUVirtualAddress(); 
+	m_VBView.StrideInBytes = ab.StrideInByte;  
+	m_VBView.SizeInBytes = ab.SizeInByte; 
+	
+	m_dxo.CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_VB.Get() , D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
 	 
 
 	DWORD iList[] = {
@@ -360,9 +367,9 @@ void App::testGrawTriangle()
 		nullptr, 
 		IID_PPV_ARGS(&m_IB));
 
-	m_VB->SetName(L"Index Buffer Resource Heap");
+	m_IB->SetName(L"Index Buffer Resource Heap");
 
-	ID3D12Resource* iBufferUploadHeap;
+	ID3D12Resource* iBufferUploadHeap; 
 	m_dxo.Device->CreateCommittedResource(
 		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD), 
 		D3D12_HEAP_FLAG_NONE, 
@@ -585,7 +592,7 @@ void App::CleanUp()
 	};
 	m_PipelineStateObject->Release();
 	m_RootSignature->Release();
-	m_VB->Release();
+	m_VB.Reset();
 
 	depthStencilBuffer.Reset();
 	dsDescriptorHeap.Reset();
