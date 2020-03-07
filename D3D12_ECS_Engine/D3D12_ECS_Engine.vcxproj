@@ -145,6 +145,8 @@
     <ClCompile Include="App.cpp" />
     <ClCompile Include="CRenderCommand.cpp" />
     <ClCompile Include="DXException.cpp" />
+    <ClCompile Include="GeoFactory.cpp" />
+    <ClCompile Include="Geo_Retangle.cpp" />
     <ClCompile Include="StepTimer.cpp" />
     <ClCompile Include="WinMain.cpp" />
   </ItemGroup>
@@ -154,6 +156,9 @@
     <ClInclude Include="d3dx12.h" />
     <ClInclude Include="DXException.h" />
     <ClInclude Include="DXObjects.h" />
+    <ClInclude Include="GeoFactory.h" />
+    <ClInclude Include="Geo_Retangle.h" />
+    <ClInclude Include="IGameObject.h" />
     <ClInclude Include="lib\entt\config\config.h" />
     <ClInclude Include="lib\entt\config\version.h" />
     <ClInclude Include="lib\entt\core\algorithm.hpp" />

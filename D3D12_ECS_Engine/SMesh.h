@@ -33,10 +33,7 @@ namespace Graphic
 	{
 		VertexBuffer VB;  
 		IndexBuffer IB;
-
-
-
-
+		 
 		/*TODO: Material*/
 		//unsigned int matType = 0; 
 		//.....TODO adding the material Type

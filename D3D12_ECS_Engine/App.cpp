@@ -309,6 +309,7 @@ void App::testGrawTriangle()
 	m_VBView.BufferLocation = ab.DataBuffer->GetGPUVirtualAddress(); 
 	m_VBView.StrideInBytes = ab.StrideInByte;  
 	m_VBView.SizeInBytes = ab.SizeInByte;
+
 	VBviews.VBViews.push_back(m_VBView);
 	//ib
 	DWORD iList[] = {
@@ -321,6 +322,7 @@ void App::testGrawTriangle()
 	m_IBView.BufferLocation = ab.DataBuffer->GetGPUVirtualAddress();
 	m_IBView.Format = DXGI_FORMAT_R32_UINT;
 	m_IBView.SizeInBytes = ab.SizeInByte;
+
 	IBViews.IBViews.push_back(m_IBView);
 
 	// 为每一帧都创建一个常量缓冲区描述符
