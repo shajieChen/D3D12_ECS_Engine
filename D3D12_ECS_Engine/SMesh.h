@@ -8,6 +8,7 @@ namespace Graphic
 	{
 		Microsoft::WRL::ComPtr<ID3D12Resource> DataBuffer; 
 		Microsoft::WRL::ComPtr<ID3D12Resource> UploadBuffer; 
+		D3D12_SUBRESOURCE_DATA* Data;
 		unsigned int SizeInByte; 
 		unsigned int StrideInByte; 
 		unsigned int ByteWidth;
@@ -20,12 +21,12 @@ namespace Graphic
 	*/
 	struct VertexBuffer
 	{ 
-		std::vector<Microsoft::WRL::ComPtr<D3D12_VERTEX_BUFFER_VIEW>> VBViews; 
+		std::vector<D3D12_VERTEX_BUFFER_VIEW> VBViews;
 	}; 
 
 	struct IndexBuffer
 	{
-		std::vector<Microsoft::WRL::ComPtr<D3D12_INDEX_BUFFER_VIEW>> IBViews;
+		std::vector<D3D12_INDEX_BUFFER_VIEW> IBViews;
 	};
 
 	struct Mesh

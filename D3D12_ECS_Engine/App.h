@@ -96,12 +96,10 @@ private:
 	ID3D12RootSignature* m_RootSignature;
 	D3D12_VIEWPORT m_ViewPort;
 	D3D12_RECT m_ScissorRect;
-
-	D3D12_VERTEX_BUFFER_VIEW m_VBView; //test
-	Microsoft::WRL::ComPtr<ID3D12Resource> m_VB; //test
-
-	ID3D12Resource* m_IB; //test
-	D3D12_INDEX_BUFFER_VIEW m_IBView;//test
+	 
+	Graphic::VertexBuffer VBviews ; 
+	 
+	Graphic::IndexBuffer IBViews; 
 
 	int m_FrameIndex; //当前RenderTarget
 	int m_RTVDescriptorSize; //描述当前前后buffer的大小 

@@ -9,9 +9,10 @@ RenderCommand::~RenderCommand()
 {
 }
 
-Graphic::AttributeBuffer RenderCommand::CreateAttributeBuffer(void* vertices, unsigned int count, unsigned int stride, BOOLEAN isNeededUpload) const
+Graphic::AttributeBuffer RenderCommand::CreateDefaultBuffer(void* vertices, unsigned int count, unsigned int stride) const
 {
-	Microsoft::WRL::ComPtr<ID3D12Resource> VB = {};
+	ID3D12Resource* dataBuffer = {};
+	/*创建资源独立堆*/
 	DX::ThrowIfFailed(CALL_INFO, 
 		m_dxo.Device->CreateCommittedResource(
 			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
@@ -19,13 +20,12 @@ Graphic::AttributeBuffer RenderCommand::CreateAttributeBuffer(void* vertices, un
 			&CD3DX12_RESOURCE_DESC::Buffer(count),
 			D3D12_RESOURCE_STATE_COPY_DEST,
 			nullptr,
-			IID_PPV_ARGS(VB.GetAddressOf()))
+			IID_PPV_ARGS(&dataBuffer))
 	);
-	VB->SetName(L"Vertex Buffer Resource Heap");
+	dataBuffer->SetName(L"Vertex Buffer Resource Heap");
 
-
-	/*创建上传缓冲区*/
-	Microsoft::WRL::ComPtr<ID3D12Resource> vBufferUploadHeap;
+	/*上传中间缓冲区*/
+	ID3D12Resource* interUploadHeap;
 	DX::ThrowIfFailed(CALL_INFO, 
 		m_dxo.Device->CreateCommittedResource
 		(
@@ -34,34 +34,35 @@ Graphic::AttributeBuffer RenderCommand::CreateAttributeBuffer(void* vertices, un
 			&CD3DX12_RESOURCE_DESC::Buffer(count),
 			D3D12_RESOURCE_STATE_GENERIC_READ,
 			nullptr,
-			IID_PPV_ARGS(&vBufferUploadHeap)
+			IID_PPV_ARGS(&interUploadHeap)
 		)
 	);
-	vBufferUploadHeap->SetName(L"Vertex Buffer Upload Resource Heap");
+	interUploadHeap->SetName(L"Vertex Buffer Upload Resource Heap");
 
 	//传输到上传缓冲区 
-	D3D12_SUBRESOURCE_DATA vertexData = {};
-	vertexData.pData = reinterpret_cast<BYTE*>(vertices);
-	vertexData.RowPitch = count;
-	vertexData.SlicePitch = count;
-	//创建VBView 
-	D3D12_VERTEX_BUFFER_VIEW m_VBView;
-	m_VBView.BufferLocation = VB->GetGPUVirtualAddress();
-	m_VBView.StrideInBytes = stride;
-	m_VBView.SizeInBytes = count;
+	D3D12_SUBRESOURCE_DATA data = {};
+	data.pData = reinterpret_cast<BYTE*>(vertices);
+	data.RowPitch = count;
+	data.SlicePitch = count; 
 
-
-    if (isNeededUpload)
-    { 
-		/*TODO : 封装成UploadConstantBuffer*/ 
-		UpdateSubresources(m_dxo.CommandList.Get(), VB.Get(), vBufferUploadHeap.Get(),0 ,0 ,1 , &vertexData);
-    }
     Graphic::AttributeBuffer ab = {};
-	ab.DataBuffer = VB;  
-	ab.UploadBuffer = vBufferUploadHeap;  
+	ab.DataBuffer = dataBuffer;  
+	ab.UploadBuffer = interUploadHeap;  
 	ab.SizeInByte = count;  
 	ab.StrideInByte = stride; 
 	ab.ByteWidth = count * stride;  
+
+	m_dxo.CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(ab.DataBuffer.Get(),
+		D3D12_RESOURCE_STATE_COMMON,
+		D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER)); 
+	UpdateSubresources(m_dxo.CommandList.Get(),
+					   ab.DataBuffer.Get(), 
+					  ab.UploadBuffer.Get(), 0, 0, 1, &data);
+	m_dxo.CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(ab.DataBuffer.Get(),
+		D3D12_RESOURCE_STATE_COPY_DEST,
+		D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
+
+	/*TODO: 这里要确保上传缓冲区对象能够存活 只有在调用commandlist之后才能够进行销毁 */
     return ab;
 }
 
@@ -73,7 +74,4 @@ void RenderCommand::Swap() const
 {
     m_dxo.SwapChain->Present(0, 0);
 }
-
-void RenderCommand::UploadConstantBuffer() const
-{
-}
+ 

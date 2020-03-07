@@ -301,128 +301,27 @@ void App::testGrawTriangle()
 		{ 0.5f, -0.5f, 0.5f, 1.0f, 0.0f, 1.0f, 1.0f },
 		{ -0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 1.0f },
 		{ 0.5f,  0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 1.0f }
-	};
-	int vBufferSize = sizeof(vList);
-
-	//m_dxo.Device->CreateCommittedResource(
-	//	&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
-	//	D3D12_HEAP_FLAG_NONE,
-	//	&CD3DX12_RESOURCE_DESC::Buffer(vBufferSize),
-	//	D3D12_RESOURCE_STATE_COPY_DEST,
-	//	nullptr,
-	//	IID_PPV_ARGS(&m_VB));
-	//	m_VB->SetName(L"Vertex Buffer Resource Heap");
-
-
-	///*创建上传缓冲区*/
-	//ID3D12Resource* vBufferUploadHeap;
-	//m_dxo.Device->CreateCommittedResource
-	//(
-	//	&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
-	//	D3D12_HEAP_FLAG_NONE,
-	//	&CD3DX12_RESOURCE_DESC::Buffer(vBufferSize), 
-	//	D3D12_RESOURCE_STATE_GENERIC_READ, 
-	//	nullptr,
-	//	IID_PPV_ARGS(&vBufferUploadHeap)
-	//);
-
-	//	vBufferUploadHeap->SetName(L"Vertex Buffer Upload Resource Heap");
-
-	//	//传输到上传缓冲区 
-	//D3D12_SUBRESOURCE_DATA vertexData = {};
-	//vertexData.pData = reinterpret_cast<BYTE*>(vList); 
-	//vertexData.RowPitch = vBufferSize; 
-	//vertexData.SlicePitch = vBufferSize;
-	////创建VBView 
-	//m_VBView.BufferLocation = m_VB->GetGPUVirtualAddress();
-	//m_VBView.StrideInBytes = sizeof(Vertex);
-	//m_VBView.SizeInBytes = vBufferSize;
-
-	///*TODO : 封装成UploadConstantBuffer*/
-	//UpdateSubresources(m_dxo.CommandList.Get(), m_VB, vBufferUploadHeap, 0, 0, 1, &vertexData);
+	}; 
 	Graphic::AttributeBuffer ab = {}; 
-	ab = m_ct.rcommand->CreateAttributeBuffer(vList , sizeof(vList) , sizeof(Vertex), true);
-	m_VB = ab.DataBuffer;  
+	ab = m_ct.rcommand->CreateDefaultBuffer(vList , sizeof(vList) , sizeof(Vertex)); 
 
+	D3D12_VERTEX_BUFFER_VIEW m_VBView;  
 	m_VBView.BufferLocation = ab.DataBuffer->GetGPUVirtualAddress(); 
 	m_VBView.StrideInBytes = ab.StrideInByte;  
-	m_VBView.SizeInBytes = ab.SizeInByte; 
-	
-	m_dxo.CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_VB.Get() , D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
-	 
-
+	m_VBView.SizeInBytes = ab.SizeInByte;
+	VBviews.VBViews.push_back(m_VBView);
+	//ib
 	DWORD iList[] = {
 		0, 1, 2,
 		0, 3, 1
-	};
+	}; 
+	ab = m_ct.rcommand->CreateDefaultBuffer(iList, sizeof(iList), sizeof(DWORD));
 
-	int iBufferSize = sizeof(iList);
-
-	/*IndexBuffer 创建*/
-	m_dxo.Device->CreateCommittedResource(
-		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT), 
-		D3D12_HEAP_FLAG_NONE, 
-		&CD3DX12_RESOURCE_DESC::Buffer(iBufferSize),
-		D3D12_RESOURCE_STATE_COPY_DEST, 
-		nullptr, 
-		IID_PPV_ARGS(&m_IB));
-
-	m_IB->SetName(L"Index Buffer Resource Heap");
-
-	ID3D12Resource* iBufferUploadHeap; 
-	m_dxo.Device->CreateCommittedResource(
-		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD), 
-		D3D12_HEAP_FLAG_NONE, 
-		&CD3DX12_RESOURCE_DESC::Buffer(vBufferSize), 
-		D3D12_RESOURCE_STATE_GENERIC_READ, 
-		nullptr,
-		IID_PPV_ARGS(&iBufferUploadHeap));
-	iBufferUploadHeap->SetName(L"Index Buffer Upload Resource Heap");
-
-	D3D12_SUBRESOURCE_DATA indexData = {};
-	indexData.pData = reinterpret_cast<BYTE*>(iList);
-	indexData.RowPitch = iBufferSize; 
-	indexData.SlicePitch = iBufferSize; 
-
-	m_IBView.BufferLocation = m_IB->GetGPUVirtualAddress();
-	m_IBView.Format = DXGI_FORMAT_R32_UINT; // 32-bit unsigned integer (this is what a dword is, double word, a word is 2 bytes)
-	m_IBView.SizeInBytes = iBufferSize;
-
-	UpdateSubresources(m_dxo.CommandList.Get(), m_IB, iBufferUploadHeap, 0, 0, 1, &indexData);
-
-	m_dxo.CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_IB, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
-
-	/*创建Stencil DepthBuffer View*/
-	D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc = {};
-	dsvHeapDesc.NumDescriptors = 1;
-	dsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
-	dsvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE; 
-
-	D3D12_DEPTH_STENCIL_VIEW_DESC depthStencilDesc = {};
-	depthStencilDesc.Format = DXGI_FORMAT_D32_FLOAT;
-	depthStencilDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
-	depthStencilDesc.Flags = D3D12_DSV_FLAG_NONE;
-
-	D3D12_CLEAR_VALUE depthOptimizedClearValue = {};
-	depthOptimizedClearValue.Format = DXGI_FORMAT_D32_FLOAT;
-	depthOptimizedClearValue.DepthStencil.Depth = 1.0f;
-	depthOptimizedClearValue.DepthStencil.Stencil = 0;
-
-	m_dxo.Device->CreateCommittedResource(
-		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
-		D3D12_HEAP_FLAG_NONE,
-		&CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_D32_FLOAT, m_Width, m_Height, 1, 0, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL),
-		D3D12_RESOURCE_STATE_DEPTH_WRITE,
-		&depthOptimizedClearValue,
-		IID_PPV_ARGS(&depthStencilBuffer)
-	);
-	m_dxo.Device->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&dsDescriptorHeap));
-
-	dsDescriptorHeap->SetName(L"Depth/Stencil Resource Heap");
-
-	m_dxo.Device->CreateDepthStencilView(depthStencilBuffer.Get(),
-										&depthStencilDesc,
-										dsDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+	D3D12_INDEX_BUFFER_VIEW m_IBView; 
+	m_IBView.BufferLocation = ab.DataBuffer->GetGPUVirtualAddress();
+	m_IBView.Format = DXGI_FORMAT_R32_UINT;
+	m_IBView.SizeInBytes = ab.SizeInByte;
+	IBViews.IBViews.push_back(m_IBView);
 
 	// 为每一帧都创建一个常量缓冲区描述符
 	for (int i = 0; i < frameBufferCount; ++i)
@@ -501,8 +400,8 @@ void App::UpdateTriangle()
 	m_dxo.CommandList->RSSetViewports(1, &m_ViewPort);
 	m_dxo.CommandList->RSSetScissorRects(1, &m_ScissorRect);
 	m_dxo.CommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	m_dxo.CommandList->IASetVertexBuffers(0, 1, &m_VBView);
-	m_dxo.CommandList->IASetIndexBuffer(&m_IBView);
+	m_dxo.CommandList->IASetVertexBuffers(0, 1, VBviews.VBViews.data());
+	m_dxo.CommandList->IASetIndexBuffer(IBViews.IBViews.data());
 	m_dxo.CommandList->DrawIndexedInstanced(6, 1, 0, 0, 0);
 
 
@@ -578,8 +477,7 @@ void App::CleanUp()
 	m_dxo.SwapChain.Reset();
 	m_CommandQueue.Reset();
 	m_rtvDescriptorHeap.Reset();
-	m_dxo.CommandList.Reset();
-	m_IB->Release();
+	m_dxo.CommandList.Reset(); 
 
 	for (int i = 0; i < frameBufferCount; ++i)
 	{
@@ -591,8 +489,7 @@ void App::CleanUp()
 
 	};
 	m_PipelineStateObject->Release();
-	m_RootSignature->Release();
-	m_VB.Reset();
+	m_RootSignature->Release(); 
 
 	depthStencilBuffer.Reset();
 	dsDescriptorHeap.Reset();
@@ -647,17 +544,38 @@ void App::CreateRtvAndDsvDescriptorHeaps()
 		m_dxo.Device->CreateRenderTargetView(m_dxo.RenderTarget[i].Get(), nullptr, rtvHandle);
 
 		rtvHandle.Offset(1, m_RTVDescriptorSize);
-	} 
-
-	/*DSV*/ 
-	D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc;
+	}   
+	/*创建Stencil DepthBuffer View*/
+	D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc = {};
 	dsvHeapDesc.NumDescriptors = 1;
 	dsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
 	dsvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-	dsvHeapDesc.NodeMask = 0;
-	DX::ThrowIfFailed(CALL_INFO,
-		m_dxo.Device->CreateDescriptorHeap(
-		&dsvHeapDesc, IID_PPV_ARGS(m_dsvDescriptorHeap.GetAddressOf())));
+
+	D3D12_DEPTH_STENCIL_VIEW_DESC depthStencilDesc = {};
+	depthStencilDesc.Format = DXGI_FORMAT_D32_FLOAT;
+	depthStencilDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+	depthStencilDesc.Flags = D3D12_DSV_FLAG_NONE;
+
+	D3D12_CLEAR_VALUE depthOptimizedClearValue = {};
+	depthOptimizedClearValue.Format = DXGI_FORMAT_D32_FLOAT;
+	depthOptimizedClearValue.DepthStencil.Depth = 1.0f;
+	depthOptimizedClearValue.DepthStencil.Stencil = 0;
+
+	m_dxo.Device->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+		D3D12_HEAP_FLAG_NONE,
+		&CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_D32_FLOAT, m_Width, m_Height, 1, 0, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL),
+		D3D12_RESOURCE_STATE_DEPTH_WRITE,
+		&depthOptimizedClearValue,
+		IID_PPV_ARGS(&depthStencilBuffer)
+	);
+	m_dxo.Device->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&dsDescriptorHeap));
+
+	dsDescriptorHeap->SetName(L"Depth/Stencil Resource Heap");
+
+	m_dxo.Device->CreateDepthStencilView(depthStencilBuffer.Get(),
+		&depthStencilDesc,
+		dsDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 }
 
 void App::CreateSwapChain()

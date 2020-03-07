@@ -16,7 +16,7 @@ public:
 	  stride:当前元素的大小，
 	  isNeededUpdate: 判断是否要传入缓冲区
 	*/
-	Graphic::AttributeBuffer CreateAttributeBuffer(void* vertices, unsigned int count, unsigned int stide,BOOLEAN isNeededUpload = false) const; 
+	Graphic::AttributeBuffer CreateDefaultBuffer(void* vertices, unsigned int count, unsigned int stide) const; 
 	void CreateIndexBuffer() const; 
 	void CreateConstantBuffer() const;
 
@@ -36,7 +36,7 @@ public:
 	void BindPixelShader() const; 
 
 	/*上传常量缓冲区 ---- 分为Default 和*/
-	void UploadConstantBuffer() const; 
+	void UploadVertexBuffer(Graphic::AttributeBuffer& ab) const;
 	void UpdateConstantBuffer() const; 
 
 	void Draw(unsigned int count) const;
