@@ -66,6 +66,64 @@ Graphic::AttributeBuffer RenderCommand::CreateDefaultBuffer(void* vertices, unsi
     return ab;
 }
 
+ID3D12RootSignature* RenderCommand::CreateRootSignature() const
+{
+	ID3D12RootSignature* RootSignature;
+
+
+
+	D3D12_DESCRIPTOR_RANGE  descriptorTableRanges[1];/*TODO: 修改1 避免Magic Number */
+	descriptorTableRanges[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
+	descriptorTableRanges[0].NumDescriptors = 1;
+	descriptorTableRanges[0].BaseShaderRegister = 0;
+	descriptorTableRanges[0].RegisterSpace = 0;
+	descriptorTableRanges[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
+	/*创建描述符表*/
+	D3D12_ROOT_DESCRIPTOR_TABLE descriptorTable;
+	descriptorTable.NumDescriptorRanges = _countof(descriptorTableRanges);
+	descriptorTable.pDescriptorRanges = &descriptorTableRanges[0];
+
+	D3D12_ROOT_PARAMETER  rootParameters[1];
+	rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+	rootParameters[0].DescriptorTable = descriptorTable;
+	rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+
+
+	/*创建根签名*/
+	CD3DX12_ROOT_SIGNATURE_DESC rootSignatureDesc;
+	rootSignatureDesc.Init(_countof(rootParameters),
+		rootParameters,
+		0,
+		nullptr,
+		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
+		D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
+		D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
+		D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS |
+		D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS);
+
+
+	Microsoft::WRL::ComPtr<ID3DBlob> signature;
+	Microsoft::WRL::ComPtr<ID3DBlob> errorBlob = nullptr;
+	DX::ThrowIfFailed(CALL_INFO,
+		D3D12SerializeRootSignature(&rootSignatureDesc,
+			D3D_ROOT_SIGNATURE_VERSION_1,
+			signature.GetAddressOf(),
+			errorBlob.GetAddressOf())
+	);
+	if (errorBlob != nullptr)
+	{
+		::OutputDebugStringA((char*)errorBlob->GetBufferPointer());
+	}
+	DX::ThrowIfFailed(CALL_INFO,
+		m_dxo.Device->CreateRootSignature(0,
+			signature->GetBufferPointer(),
+			signature->GetBufferSize(),
+			IID_PPV_ARGS(&RootSignature))
+	);
+	return RootSignature; 
+}
+
 void RenderCommand::Clear() const
 {
 }

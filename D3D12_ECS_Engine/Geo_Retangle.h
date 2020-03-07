@@ -11,6 +11,7 @@ namespace example
 	public:
 		GeoRetangle(Graphic::Context& context);
 		virtual ~GeoRetangle();
+		virtual void Render() override; 
 		virtual void Update() override; 
 		virtual void UpdateGUI() override; 
 	private:

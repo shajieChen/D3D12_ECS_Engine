@@ -227,6 +227,9 @@
     <ClInclude Include="IGameObject.h">
       <Filter>源文件\GeoFactory</Filter>
     </ClInclude>
+    <ClInclude Include="SShader.h">
+      <Filter>源文件\Core\Core_Graphic</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="DefaultVS.hlsl">

@@ -5,6 +5,7 @@
 #include "DXObjects.h"
 #include "SContext.h"
 #include "SConstantBuffer.h"
+#include "Geo_Retangle.h"
 #ifndef APP_H
 #define APP_H
 
@@ -103,6 +104,7 @@ private:
 
 	int m_FrameIndex; //当前RenderTarget
 	int m_RTVDescriptorSize; //描述当前前后buffer的大小 
+	std::unique_ptr<example::GeoRetangle> retExample;
 
 };  
 #endif // !APP_H

@@ -20,6 +20,10 @@ public:
 	void CreateIndexBuffer() const; 
 	void CreateConstantBuffer() const;
 
+	/*
+	*/
+	ID3D12RootSignature* CreateRootSignature() const;
+
 	//TODO: Create Shader 
 	void CreateVertexShader() const; 
 	void CreatePixelShader() const; 

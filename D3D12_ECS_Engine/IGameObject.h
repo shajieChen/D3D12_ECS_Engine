@@ -8,6 +8,7 @@ namespace example
 	public: 
 		virtual	~IGameObejct() {} ;
 		virtual void UpdateGUI() = 0 ;
+		virtual void Render() = 0; 
 		virtual void Update() = 0 ; 
 		virtual void Release() = 0; 
 	}; 
