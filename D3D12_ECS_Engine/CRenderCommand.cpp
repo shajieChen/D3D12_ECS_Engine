@@ -68,9 +68,7 @@ Graphic::AttributeBuffer RenderCommand::CreateDefaultBuffer(void* vertices, unsi
 
 ID3D12RootSignature* RenderCommand::CreateRootSignature() const
 {
-	ID3D12RootSignature* RootSignature;
-
-
+	ID3D12RootSignature* RootSignature; 
 
 	D3D12_DESCRIPTOR_RANGE  descriptorTableRanges[1];/*TODO: –ﬁ∏ƒ1 ±‹√‚Magic Number */
 	descriptorTableRanges[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
@@ -122,6 +120,17 @@ ID3D12RootSignature* RenderCommand::CreateRootSignature() const
 			IID_PPV_ARGS(&RootSignature))
 	);
 	return RootSignature; 
+}
+
+Graphic::Shader RenderCommand::CreateShader(LPCWSTR filePath) const
+{
+	Graphic::Shader shader = { }; 
+	ID3DBlob* tmpShader;
+	DX::ThrowIfFailed(CALL_INFO, 
+		D3DReadFileToBlob(filePath, &tmpShader)
+	);
+	shader.byteCode = tmpShader; 
+	return shader;
 }
 
 void RenderCommand::Clear() const

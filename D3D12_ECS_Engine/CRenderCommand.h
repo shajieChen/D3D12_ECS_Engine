@@ -1,5 +1,6 @@
 #pragma once
 #include "DXObjects.h"
+#include "SShader.h"
 #include "SMesh.h"
 #ifndef RENDERCOMMAND_H
 #define RENDERCOMMAND_H 
@@ -25,8 +26,8 @@ public:
 	ID3D12RootSignature* CreateRootSignature() const;
 
 	//TODO: Create Shader 
-	void CreateVertexShader() const; 
-	void CreatePixelShader() const; 
+	Graphic::Shader CreateShader(LPCWSTR filePath) const;
+	
 	void CreateSampler() const; 
 
 	//TODO : Bind Buffer

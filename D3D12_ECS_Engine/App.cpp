@@ -194,20 +194,15 @@ void App::InitWindow(HINSTANCE& hInstance)
 
 void App::testGrawTriangle()
 {
-	//vs 
-	ID3DBlob* vertexShader;
-	D3DReadFileToBlob(L"DefaultVS.cso", &vertexShader);
-	D3D12_SHADER_BYTECODE vertexShaderBytecode = {};
-	vertexShaderBytecode.BytecodeLength = vertexShader->GetBufferSize();
-	vertexShaderBytecode.pShaderBytecode = vertexShader->GetBufferPointer();
+	//vs  
+	Graphic::Shader vertexShader = m_ct.rcommand->CreateShader(L"DefaultVS.cso");
+	D3D12_SHADER_BYTECODE vertexShaderBytecode = { vertexShader.byteCode->GetBufferPointer(),
+												   vertexShader.byteCode->GetBufferSize() } ;
 
-	//ps
-	ID3DBlob* pixelShader;
-	D3DReadFileToBlob(L"DefaultPS.cso", &pixelShader);
-	D3D12_SHADER_BYTECODE pixelShaderBytecode = {};
-	pixelShaderBytecode.BytecodeLength = pixelShader->GetBufferSize();
-	pixelShaderBytecode.pShaderBytecode = pixelShader->GetBufferPointer();
-
+	//ps 
+	Graphic::Shader pixelShader = m_ct.rcommand->CreateShader(L"DefaultPS.cso");
+	D3D12_SHADER_BYTECODE pixelShaderBytecode = { pixelShader.byteCode->GetBufferPointer(), 
+												  pixelShader.byteCode->GetBufferSize() }; 
 	//ied 
 	D3D12_INPUT_ELEMENT_DESC inputLayout[] =
 	{
