@@ -11,17 +11,20 @@ struct  DXObject
 	Microsoft::WRL::ComPtr<ID3D12Device> Device;
 	Microsoft::WRL::ComPtr<IDXGISwapChain3> SwapChain; /*后端三buffer*/
 	Microsoft::WRL::ComPtr<ID3D12Resource> RenderTarget[FrameBufferCount];
-	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> CommandList;  /*相当于D3D中的Context*/
+	
+	/*显存内存管理*/
+	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> CommandList;  /*相当于D3D中的Context -- CPU命令列表*/
+	Microsoft::WRL::ComPtr<ID3D12CommandQueue> m_CommandQueue;			/*GPU命令队列*/
+	Microsoft::WRL::ComPtr<ID3D12Fence> m_Fence[FrameBufferCount];
+	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> m_CommandAllocator[FrameBufferCount];
 
 
-		/*Microsoft::WRL::ComPtr<ID3D12DescriptorHeap*/
-	//Microsoft::WRL::ComPtr<ID3D12CommandQueue> CommandQueue;/*GPU上层调用commandList*/
-	//Microsoft::WRL::ComPtr<ID3D12CommandAllocator*> CommandAllocator[FrameBufferCount];
 
-	/*CPU Fence*/
-	/*Microsoft::WRL::ComPtr<ID3D12Fence*> Fence[FrameBufferCount];
-	HANDLE FenceEvnet;
-	UINT64 FenceValue[FrameBufferCount];*/
+	int m_FrameIndex; //当前RenderTarget
+	int m_RTVDescriptorSize;
+
+
+	const int frameBufferCount = FrameBufferCount;
 };
 
 

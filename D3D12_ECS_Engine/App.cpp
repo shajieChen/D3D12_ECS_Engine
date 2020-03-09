@@ -1,6 +1,5 @@
-#include "App.h"
-#include "Vertex.h"
-
+#include "App.h"  
+#include "GeoFactory.h"
 App* App::instance = nullptr; 
 
 LRESULT CALLBACK WndProMessage(HWND hWnd, UINT msg, WPARAM wParam , LPARAM lParam)
@@ -162,7 +161,7 @@ void App::InitD3D12()
 	for (int i = 0; i < FrameBufferCount; i++)
 	{
 		DX::ThrowIfFailed(CALL_INFO,  
-			m_dxo.Device->CreateFence(0 , D3D12_FENCE_FLAG_NONE , IID_PPV_ARGS(&m_Fence[i]))
+			m_dxo.Device->CreateFence(0 , D3D12_FENCE_FLAG_NONE , IID_PPV_ARGS(&m_dxo.m_Fence[i]))
 		);
 		m_FenceValue[i] = 0; 
 	}
@@ -194,6 +193,8 @@ void App::InitWindow(HINSTANCE& hInstance)
 
 void App::testGrawTriangle()
 {
+	example::GeoFactory geoFactory(m_ct); 
+
 	//vs  
 	Graphic::Shader vertexShader = m_ct.rcommand->CreateShader(L"DefaultVS.cso");
 	D3D12_SHADER_BYTECODE vertexShaderBytecode = { vertexShader.byteCode->GetBufferPointer(),
@@ -208,65 +209,35 @@ void App::testGrawTriangle()
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
-	};
-
-	//inputlayout 
-	D3D12_INPUT_LAYOUT_DESC inputLayoutDesc = {};
+	}; 
+	D3D12_INPUT_LAYOUT_DESC inputLayoutDesc = {}; 
 	inputLayoutDesc.NumElements = sizeof(inputLayout) / sizeof(D3D12_INPUT_ELEMENT_DESC);
-	inputLayoutDesc.pInputElementDescs = inputLayout;
-
-	/*Samplr*/
-	DXGI_SAMPLE_DESC  sampleDesc = {};
-	sampleDesc.Count = 1;
+	inputLayoutDesc.pInputElementDescs = inputLayout; 
 
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {}; 
-	psoDesc.InputLayout = inputLayoutDesc; 
-	psoDesc.pRootSignature = m_RootSignature; 
+	psoDesc.InputLayout = { inputLayout, sizeof(inputLayout) / sizeof(D3D12_INPUT_ELEMENT_DESC) };
+	psoDesc.pRootSignature = m_RootSignature.Get(); 
 	psoDesc.VS = vertexShaderBytecode; 
 	psoDesc.PS = pixelShaderBytecode; 
 	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE; 
 	psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM; 
-	psoDesc.SampleDesc = sampleDesc; 
+	psoDesc.SampleDesc = { 1 };
 	psoDesc.SampleMask = 0xffffffff; 
 	psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT); 
 	psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
 	psoDesc.NumRenderTargets = 1; 	
-	psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+	psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT); 
+	DX::ThrowIfFailed(CALL_INFO,  
+		m_dxo.Device->CreateGraphicsPipelineState(&psoDesc,
+												  IID_PPV_ARGS(&m_PipelineStateObject))
+	);  
 
-	m_dxo.Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_PipelineStateObject));
-
-	//vb 
-	Vertex vList[] = {
-		{ -0.5f,  0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 1.0f },
-		{ 0.5f, -0.5f, 0.5f, 1.0f, 0.0f, 1.0f, 1.0f },
-		{ -0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 1.0f },
-		{ 0.5f,  0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 1.0f }
-	}; 
-	Graphic::AttributeBuffer ab = {}; 
-	ab = m_ct.rcommand->CreateDefaultBuffer(vList , sizeof(vList) , sizeof(Vertex)); 
-
-	D3D12_VERTEX_BUFFER_VIEW m_VBView;  
-	m_VBView.BufferLocation = ab.DataBuffer->GetGPUVirtualAddress(); 
-	m_VBView.StrideInBytes = ab.StrideInByte;  
-	m_VBView.SizeInBytes = ab.SizeInByte;
-
-	VBviews.VBViews.push_back(m_VBView);
-	//ib
-	DWORD iList[] = {
-		0, 1, 2,
-		0, 3, 1
-	}; 
-	ab = m_ct.rcommand->CreateDefaultBuffer(iList, sizeof(iList), sizeof(DWORD));
-
-	D3D12_INDEX_BUFFER_VIEW m_IBView; 
-	m_IBView.BufferLocation = ab.DataBuffer->GetGPUVirtualAddress();
-	m_IBView.Format = DXGI_FORMAT_R32_UINT;
-	m_IBView.SizeInBytes = ab.SizeInByte;
-
-	IBViews.IBViews.push_back(m_IBView);
+	Graphic::Mesh meshViews = geoFactory.CreateRetangle();  
+	VBviews.VBViews.insert(VBviews.VBViews.end() , meshViews.VB.VBViews.begin() , meshViews.VB.VBViews.end());
+	IBViews.IBViews.insert(IBViews.IBViews.end() , meshViews.IB.IBViews.begin() , meshViews.IB.IBViews.end());
 
 	// 为每一帧都创建一个常量缓冲区描述符
-	for (int i = 0; i < frameBufferCount; ++i)
+	for (int i = 0; i < m_dxo.frameBufferCount; ++i)
 	{
 		D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
 		heapDesc.NumDescriptors = 1;
@@ -276,7 +247,7 @@ void App::testGrawTriangle()
 	}
 
 	// 创建上传缓冲区(共享缓冲区) --- 包括 resources heap/Descriptor Heap/指向ConstantBufferView的指针
-	for (int i = 0; i < frameBufferCount; ++i)
+	for (int i = 0; i < m_dxo.frameBufferCount; ++i)
 	{
 		m_dxo.Device->CreateCommittedResource(
 			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD), //指明为上传缓冲堆
@@ -302,12 +273,12 @@ void App::testGrawTriangle()
 
 	m_dxo.CommandList->Close();
 	ID3D12CommandList* ppCommandLists[] = { m_dxo.CommandList.Get() };
-	m_CommandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
+	m_dxo.m_CommandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
 
 	//添加m_Fence 保证再会之前
-	m_FenceValue[m_FrameIndex]++;
+	m_FenceValue[m_dxo.m_FrameIndex]++;
 	DX::ThrowIfFailed(CALL_INFO, 
-		m_CommandQueue->Signal(m_Fence[m_FrameIndex], m_FenceValue[m_FrameIndex])
+		m_dxo.m_CommandQueue->Signal(m_dxo.m_Fence[m_dxo.m_FrameIndex].Get(), m_FenceValue[m_dxo.m_FrameIndex])
 	);
 
 }
@@ -317,14 +288,14 @@ void App::UpdateTriangle()
 	WaitForPreviousFrame();
 
 	DX::ThrowIfFailed(CALL_INFO, 
-		m_CommandAllocator[m_FrameIndex]->Reset()
+		m_CommandAllocator[m_dxo.m_FrameIndex]->Reset()
 	);
 	DX::ThrowIfFailed(CALL_INFO,
-		m_dxo.CommandList->Reset(m_CommandAllocator[m_FrameIndex], m_PipelineStateObject)
+		m_dxo.CommandList->Reset(m_CommandAllocator[m_dxo.m_FrameIndex], m_PipelineStateObject.Get())
 	);
 
-	m_dxo.CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_dxo.RenderTarget[m_FrameIndex].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
-	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), m_FrameIndex, m_RTVDescriptorSize);
+	m_dxo.CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_dxo.RenderTarget[m_dxo.m_FrameIndex].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
+	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), m_dxo.m_FrameIndex, m_dxo.m_RTVDescriptorSize);
 	CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle(dsDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 	m_dxo.CommandList->OMSetRenderTargets(1, &rtvHandle, FALSE, &dsvHandle);
 	
@@ -332,12 +303,12 @@ void App::UpdateTriangle()
 	m_dxo.CommandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
 	m_dxo.CommandList->ClearDepthStencilView(dsDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 	/*开始绘制*/ 	
-	m_dxo.CommandList->SetGraphicsRootSignature(m_RootSignature);
+	m_dxo.CommandList->SetGraphicsRootSignature(m_RootSignature.Get());
 
-	ID3D12DescriptorHeap* descriptorHeaps[] = { mainDescriptorHeap[m_FrameIndex] };
+	ID3D12DescriptorHeap* descriptorHeaps[] = { mainDescriptorHeap[m_dxo.m_FrameIndex] };
 	m_dxo.CommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
 	 
-	m_dxo.CommandList->SetGraphicsRootDescriptorTable(0, mainDescriptorHeap[m_FrameIndex]->GetGPUDescriptorHandleForHeapStart());
+	m_dxo.CommandList->SetGraphicsRootDescriptorTable(0, mainDescriptorHeap[m_dxo.m_FrameIndex]->GetGPUDescriptorHandleForHeapStart());
 
 	m_dxo.CommandList->RSSetViewports(1, &m_ViewPort);
 	m_dxo.CommandList->RSSetScissorRects(1, &m_ScissorRect);
@@ -347,7 +318,7 @@ void App::UpdateTriangle()
 	m_dxo.CommandList->DrawIndexedInstanced(6, 1, 0, 0, 0);
 
 
-	m_dxo.CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_dxo.RenderTarget[m_FrameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
+	m_dxo.CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_dxo.RenderTarget[m_dxo.m_FrameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
 
 	DX::ThrowIfFailed(CALL_INFO,
 		m_dxo.CommandList->Close()
@@ -382,18 +353,18 @@ void App::Update()
 	}
 
 	//map/UnMap 动态缓冲区
-	memcpy(cbColorMultiplierGPUAddress[m_FrameIndex], &cbColorMultiplierData, sizeof(cbColorMultiplierData));
+	memcpy(cbColorMultiplierGPUAddress[m_dxo.m_FrameIndex], &cbColorMultiplierData, sizeof(cbColorMultiplierData));
 }
 
 void App::Render()
 {
 	UpdateTriangle(); //test
 	ID3D12CommandList* ppCommandLists[] = { m_dxo.CommandList.Get() };
-	 
-	m_CommandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
-
+	 //CPU 传递CommandList 到CommandQueue 
+	m_dxo.m_CommandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
+	/*GPU 设置围栏值*/
 	DX::ThrowIfFailed(CALL_INFO,  
-		m_CommandQueue->Signal(m_Fence[m_FrameIndex], m_FenceValue[m_FrameIndex])
+		m_dxo.m_CommandQueue->Signal(m_dxo.m_Fence[m_dxo.m_FrameIndex].Get(), m_FenceValue[m_dxo.m_FrameIndex])
 	);
 
 	DX::ThrowIfFailed(CALL_INFO, 
@@ -405,9 +376,9 @@ void App::Render()
 
 void App::CleanUp()
 { 
-	for (int i = 0; i < frameBufferCount; ++i)
+	for (int i = 0; i < m_dxo.frameBufferCount; ++i)
 	{
-		m_FrameIndex = i;
+		m_dxo.m_FrameIndex = i;
 		WaitForPreviousFrame();
 	}
 
@@ -417,21 +388,21 @@ void App::CleanUp()
 
 	if (m_dxo.Device)m_dxo.Device.Reset();
 	m_dxo.SwapChain.Reset();
-	m_CommandQueue.Reset();
+	m_dxo.m_CommandQueue.Reset();
 	m_rtvDescriptorHeap.Reset();
 	m_dxo.CommandList.Reset(); 
 
-	for (int i = 0; i < frameBufferCount; ++i)
+	for (int i = 0; i < m_dxo.frameBufferCount; ++i)
 	{
 		m_dxo.RenderTarget[i].Reset();
 		m_CommandAllocator[i]->Release();
-		m_Fence[i]->Release();
+		m_dxo.m_Fence[i].Reset();
 		mainDescriptorHeap[i]->Release();
 		constantBufferUploadHeap[i]->Release();
 
 	};
-	m_PipelineStateObject->Release();
-	m_RootSignature->Release(); 
+	m_PipelineStateObject.Reset();
+	m_RootSignature.Reset(); 
 
 	depthStencilBuffer.Reset();
 	dsDescriptorHeap.Reset();
@@ -448,23 +419,23 @@ void App::OnResize()
 
 void App::WaitForPreviousFrame()
 {
-	m_FrameIndex = m_dxo.SwapChain->GetCurrentBackBufferIndex();
+	m_dxo.m_FrameIndex = m_dxo.SwapChain->GetCurrentBackBufferIndex();
 
-	if (m_Fence[m_FrameIndex]->GetCompletedValue() < m_FenceValue[m_FrameIndex])
+	if (m_dxo.m_Fence[m_dxo.m_FrameIndex]->GetCompletedValue() < m_FenceValue[m_dxo.m_FrameIndex])
 	{
 		DX::ThrowIfFailed(CALL_INFO , 
-			m_Fence[m_FrameIndex]->SetEventOnCompletion(m_FenceValue[m_FrameIndex], m_FenceEvent)
+			m_dxo.m_Fence[m_dxo.m_FrameIndex]->SetEventOnCompletion(m_FenceValue[m_dxo.m_FrameIndex], m_FenceEvent)
 		);
 		
 		WaitForSingleObject(m_FenceEvent, INFINITE);
 	} 
-	m_FenceValue[m_FrameIndex]++;
+	m_FenceValue[m_dxo.m_FrameIndex]++;
 }
 
 void App::CreateRtvAndDsvDescriptorHeaps()
 { 
 	/*RTV描述符堆*/
-	m_FrameIndex = m_dxo.SwapChain->GetCurrentBackBufferIndex();
+	m_dxo.m_FrameIndex = m_dxo.SwapChain->GetCurrentBackBufferIndex();
 	//RTV
 	D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
 	rtvHeapDesc.NumDescriptors = FrameBufferCount;
@@ -473,7 +444,7 @@ void App::CreateRtvAndDsvDescriptorHeaps()
 	DX::ThrowIfFailed(CALL_INFO,
 		m_dxo.Device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&m_rtvDescriptorHeap))
 	);
-	m_RTVDescriptorSize = m_dxo.Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	m_dxo.m_RTVDescriptorSize = m_dxo.Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
 	//CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());;
 	auto rtvHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(m_rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
@@ -485,7 +456,7 @@ void App::CreateRtvAndDsvDescriptorHeaps()
 		);
 		m_dxo.Device->CreateRenderTargetView(m_dxo.RenderTarget[i].Get(), nullptr, rtvHandle);
 
-		rtvHandle.Offset(1, m_RTVDescriptorSize);
+		rtvHandle.Offset(1, m_dxo.m_RTVDescriptorSize);
 	}   
 	/*创建Stencil DepthBuffer View*/
 	D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc = {};
@@ -542,7 +513,7 @@ void App::CreateSwapChain()
 	IDXGISwapChain* tmpSwapChain;
 
 	DX::ThrowIfFailed(CALL_INFO,
-		m_DXGIFactory->CreateSwapChain(m_CommandQueue.Get(),
+		m_DXGIFactory->CreateSwapChain(m_dxo.m_CommandQueue.Get(),
 			&swapChainDesc,
 			&tmpSwapChain)
 	);
@@ -554,7 +525,7 @@ void App::CreateCommandObjects()
 	/*创建GPUCommandQueue*/
 	D3D12_COMMAND_QUEUE_DESC cqDesc = {};
 	DX::ThrowIfFailed(CALL_INFO,
-		m_dxo.Device->CreateCommandQueue(&cqDesc, IID_PPV_ARGS(&m_CommandQueue))
+		m_dxo.Device->CreateCommandQueue(&cqDesc, IID_PPV_ARGS(&m_dxo.m_CommandQueue))
 	); 
 
 	/*CommandAllocator*/

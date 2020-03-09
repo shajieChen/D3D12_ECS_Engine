@@ -55,3 +55,9 @@
 using namespace DirectX;
 
 #endif // !PCH_H
+
+
+/*Inner Used*/
+#ifndef FrameBufferCount
+#define FrameBufferCount 3 
+#endif // !FrameBufferCount

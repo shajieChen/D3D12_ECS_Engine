@@ -20,14 +20,14 @@ public:
 	Graphic::AttributeBuffer CreateDefaultBuffer(void* vertices, unsigned int count, unsigned int stide) const; 
 	void CreateIndexBuffer() const; 
 	void CreateConstantBuffer() const;
-
+	
 	/*
 	*/
 	ID3D12RootSignature* CreateRootSignature() const;
 
 	//TODO: Create Shader 
 	Graphic::Shader CreateShader(LPCWSTR filePath) const;
-	
+
 	void CreateSampler() const; 
 
 	//TODO : Bind Buffer

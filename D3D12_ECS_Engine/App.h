@@ -1,18 +1,14 @@
 #pragma once
 #include "pch.h"
-#include <functional>
 #include "Vertex.h"
 #include "DXObjects.h"
 #include "SContext.h"
 #include "SConstantBuffer.h"
 #include "Geo_Retangle.h"
+#include <functional>
 #ifndef APP_H
 #define APP_H
 
-#ifndef FrameBufferCount
-#define FrameBufferCount 3 
-#endif // !FrameBufferCount
- 
 class App
 {
 public:
@@ -53,8 +49,7 @@ private:
 	Graphic::Context m_ct; 
 
 	IDXGIFactory4* m_DXGIFactory;
-
-
+	 
 private:
 	HWND hWnd;
 	const LPCWSTR WinsName = L"D3D12_With_ECS";
@@ -63,25 +58,19 @@ private:
 	int m_Width;
 	int m_Height;
 	bool is_FullScreen;
-#pragma region Renderer 
-	/*D3D12*/
-	const int frameBufferCount = FrameBufferCount;
 
-	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_rtvDescriptorHeap;
-	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_dsvDescriptorHeap;
+#pragma region Renderer  
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_rtvDescriptorHeap; 
+	Microsoft::WRL::ComPtr <ID3D12DescriptorHeap> dsDescriptorHeap;					//深度模板的描述符缓冲堆
+	Microsoft::WRL::ComPtr <ID3D12Resource> depthStencilBuffer;
 
 	/*GPUCommandQueue & CPUCommandList*/
-	Microsoft::WRL::ComPtr<ID3D12CommandQueue> m_CommandQueue;			/*GPU命令列表*/
-	//ID3D12GraphicsCommandList* m_CommandList;							/*CPU命令列表*/
 	ID3D12CommandAllocator* m_CommandAllocator[FrameBufferCount];		/*命令分配器*/
 
 		/*Fence CPU*/
-	ID3D12Fence* m_Fence[FrameBufferCount];
+	//Microsoft::WRL::ComPtr<ID3D12Fence> m_Fence[FrameBufferCount];
 	HANDLE m_FenceEvent;
 	UINT64 m_FenceValue[FrameBufferCount];
-
-	Microsoft::WRL::ComPtr <ID3D12Resource> depthStencilBuffer;
-	Microsoft::WRL::ComPtr <ID3D12DescriptorHeap> dsDescriptorHeap;					//深度模板的描述符缓冲堆
 
 	ID3D12DescriptorHeap* mainDescriptorHeap[FrameBufferCount];						// 用于存储描述符的缓冲堆
 	ID3D12Resource* constantBufferUploadHeap[FrameBufferCount];						//每一帧上面都有特定的共享内存Buffer来进行传输CPU 端上的ConstantBuffer 
@@ -92,19 +81,20 @@ private:
 
 
 #pragma endregion
-	/*屏幕*/
-	ID3D12PipelineState* m_PipelineStateObject;
-	ID3D12RootSignature* m_RootSignature;
-	D3D12_VIEWPORT m_ViewPort;
-	D3D12_RECT m_ScissorRect;
-	 
-	Graphic::VertexBuffer VBviews ; 
-	 
-	Graphic::IndexBuffer IBViews; 
+	
+#pragma region tmpObject
+	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_PipelineStateObject;
+	Microsoft::WRL::ComPtr<ID3D12RootSignature> m_RootSignature;
 
-	int m_FrameIndex; //当前RenderTarget
-	int m_RTVDescriptorSize; //描述当前前后buffer的大小 
+	Graphic::VertexBuffer VBviews;
+	Graphic::IndexBuffer IBViews;
+
 	std::unique_ptr<example::GeoRetangle> retExample;
+#pragma endregion 
+
+	/*屏幕*/
+	D3D12_VIEWPORT m_ViewPort;
+	D3D12_RECT m_ScissorRect; 
 
 };  
 #endif // !APP_H

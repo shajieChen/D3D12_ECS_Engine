@@ -14,7 +14,7 @@ namespace Graphic
 	{ 
 		Microsoft::WRL::ComPtr<ID3DBlob> byteCode = nullptr;
 		std::vector< Microsoft::WRL::ComPtr<ID3D12Resource>> ConstantBuffers;//TODO : »»³ÉConstantBufferView
-	};
+	}; 
 
 	struct PSO
 	{

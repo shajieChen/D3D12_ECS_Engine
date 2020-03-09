@@ -133,6 +133,7 @@ Graphic::Shader RenderCommand::CreateShader(LPCWSTR filePath) const
 	return shader;
 }
 
+ 
 void RenderCommand::Clear() const
 {
 }
