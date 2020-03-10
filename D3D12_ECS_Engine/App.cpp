@@ -163,10 +163,10 @@ void App::InitD3D12()
 		DX::ThrowIfFailed(CALL_INFO,  
 			m_dxo.Device->CreateFence(0 , D3D12_FENCE_FLAG_NONE , IID_PPV_ARGS(&m_dxo.m_Fence[i]))
 		);
-		m_FenceValue[i] = 0; 
+		m_dxo.m_FenceValue[i] = 0; 
 	}
-	m_FenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-	if (m_FenceEvent == nullptr)
+	m_dxo.m_FenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+	if (m_dxo.m_FenceEvent == nullptr)
 	{
 		return; 
 	} 
@@ -276,9 +276,9 @@ void App::testGrawTriangle()
 	m_dxo.m_CommandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
 
 	//添加m_Fence 保证再会之前
-	m_FenceValue[m_dxo.m_FrameIndex]++;
+	m_dxo.m_FenceValue[m_dxo.FrameIndex]++;
 	DX::ThrowIfFailed(CALL_INFO, 
-		m_dxo.m_CommandQueue->Signal(m_dxo.m_Fence[m_dxo.m_FrameIndex].Get(), m_FenceValue[m_dxo.m_FrameIndex])
+		m_dxo.m_CommandQueue->Signal(m_dxo.m_Fence[m_dxo.FrameIndex].Get(), m_dxo.m_FenceValue[m_dxo.FrameIndex])
 	);
 
 }
@@ -288,14 +288,14 @@ void App::UpdateTriangle()
 	WaitForPreviousFrame();
 
 	DX::ThrowIfFailed(CALL_INFO, 
-		m_CommandAllocator[m_dxo.m_FrameIndex]->Reset()
+		m_dxo.m_CommandAllocator[m_dxo.FrameIndex]->Reset()
 	);
 	DX::ThrowIfFailed(CALL_INFO,
-		m_dxo.CommandList->Reset(m_CommandAllocator[m_dxo.m_FrameIndex], m_PipelineStateObject.Get())
+		m_dxo.CommandList->Reset(m_dxo.m_CommandAllocator[m_dxo.FrameIndex].Get(), m_PipelineStateObject.Get())
 	);
 
-	m_dxo.CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_dxo.RenderTarget[m_dxo.m_FrameIndex].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
-	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), m_dxo.m_FrameIndex, m_dxo.m_RTVDescriptorSize);
+	m_dxo.CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_dxo.RenderTarget[m_dxo.FrameIndex].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
+	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), m_dxo.FrameIndex, m_dxo.RTVDescSize);
 	CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle(dsDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 	m_dxo.CommandList->OMSetRenderTargets(1, &rtvHandle, FALSE, &dsvHandle);
 	
@@ -305,10 +305,10 @@ void App::UpdateTriangle()
 	/*开始绘制*/ 	
 	m_dxo.CommandList->SetGraphicsRootSignature(m_RootSignature.Get());
 
-	ID3D12DescriptorHeap* descriptorHeaps[] = { mainDescriptorHeap[m_dxo.m_FrameIndex] };
+	ID3D12DescriptorHeap* descriptorHeaps[] = { mainDescriptorHeap[m_dxo.FrameIndex] };
 	m_dxo.CommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
 	 
-	m_dxo.CommandList->SetGraphicsRootDescriptorTable(0, mainDescriptorHeap[m_dxo.m_FrameIndex]->GetGPUDescriptorHandleForHeapStart());
+	m_dxo.CommandList->SetGraphicsRootDescriptorTable(0, mainDescriptorHeap[m_dxo.FrameIndex]->GetGPUDescriptorHandleForHeapStart());
 
 	m_dxo.CommandList->RSSetViewports(1, &m_ViewPort);
 	m_dxo.CommandList->RSSetScissorRects(1, &m_ScissorRect);
@@ -318,7 +318,7 @@ void App::UpdateTriangle()
 	m_dxo.CommandList->DrawIndexedInstanced(6, 1, 0, 0, 0);
 
 
-	m_dxo.CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_dxo.RenderTarget[m_dxo.m_FrameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
+	m_dxo.CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_dxo.RenderTarget[m_dxo.FrameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
 
 	DX::ThrowIfFailed(CALL_INFO,
 		m_dxo.CommandList->Close()
@@ -353,7 +353,7 @@ void App::Update()
 	}
 
 	//map/UnMap 动态缓冲区
-	memcpy(cbColorMultiplierGPUAddress[m_dxo.m_FrameIndex], &cbColorMultiplierData, sizeof(cbColorMultiplierData));
+	memcpy(cbColorMultiplierGPUAddress[m_dxo.FrameIndex], &cbColorMultiplierData, sizeof(cbColorMultiplierData));
 }
 
 void App::Render()
@@ -364,7 +364,7 @@ void App::Render()
 	m_dxo.m_CommandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
 	/*GPU 设置围栏值*/
 	DX::ThrowIfFailed(CALL_INFO,  
-		m_dxo.m_CommandQueue->Signal(m_dxo.m_Fence[m_dxo.m_FrameIndex].Get(), m_FenceValue[m_dxo.m_FrameIndex])
+		m_dxo.m_CommandQueue->Signal(m_dxo.m_Fence[m_dxo.FrameIndex].Get(), m_dxo.m_FenceValue[m_dxo.FrameIndex])
 	);
 
 	DX::ThrowIfFailed(CALL_INFO, 
@@ -378,7 +378,7 @@ void App::CleanUp()
 { 
 	for (int i = 0; i < m_dxo.frameBufferCount; ++i)
 	{
-		m_dxo.m_FrameIndex = i;
+		m_dxo.FrameIndex = i;
 		WaitForPreviousFrame();
 	}
 
@@ -395,7 +395,7 @@ void App::CleanUp()
 	for (int i = 0; i < m_dxo.frameBufferCount; ++i)
 	{
 		m_dxo.RenderTarget[i].Reset();
-		m_CommandAllocator[i]->Release();
+		m_dxo.m_CommandAllocator[i].Reset();
 		m_dxo.m_Fence[i].Reset();
 		mainDescriptorHeap[i]->Release();
 		constantBufferUploadHeap[i]->Release();
@@ -412,30 +412,30 @@ void App::OnResize()
 {
 	assert(m_dxo.Device);
 	assert(m_dxo.SwapChain);
-	assert(m_CommandAllocator);
+	assert(m_dxo.m_CommandAllocator);
 
 	WaitForPreviousFrame(); 
 }
 
 void App::WaitForPreviousFrame()
 {
-	m_dxo.m_FrameIndex = m_dxo.SwapChain->GetCurrentBackBufferIndex();
+	m_dxo.FrameIndex = m_dxo.SwapChain->GetCurrentBackBufferIndex();
 
-	if (m_dxo.m_Fence[m_dxo.m_FrameIndex]->GetCompletedValue() < m_FenceValue[m_dxo.m_FrameIndex])
+	if (m_dxo.m_Fence[m_dxo.FrameIndex]->GetCompletedValue() < m_dxo.m_FenceValue[m_dxo.FrameIndex])
 	{
 		DX::ThrowIfFailed(CALL_INFO , 
-			m_dxo.m_Fence[m_dxo.m_FrameIndex]->SetEventOnCompletion(m_FenceValue[m_dxo.m_FrameIndex], m_FenceEvent)
+			m_dxo.m_Fence[m_dxo.FrameIndex]->SetEventOnCompletion(m_dxo.m_FenceValue[m_dxo.FrameIndex], m_dxo.m_FenceEvent)
 		);
 		
-		WaitForSingleObject(m_FenceEvent, INFINITE);
+		WaitForSingleObject(m_dxo.m_FenceEvent, INFINITE);
 	} 
-	m_FenceValue[m_dxo.m_FrameIndex]++;
+	m_dxo.m_FenceValue[m_dxo.FrameIndex]++;
 }
 
 void App::CreateRtvAndDsvDescriptorHeaps()
 { 
 	/*RTV描述符堆*/
-	m_dxo.m_FrameIndex = m_dxo.SwapChain->GetCurrentBackBufferIndex();
+	m_dxo.FrameIndex = m_dxo.SwapChain->GetCurrentBackBufferIndex();
 	//RTV
 	D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
 	rtvHeapDesc.NumDescriptors = FrameBufferCount;
@@ -444,7 +444,7 @@ void App::CreateRtvAndDsvDescriptorHeaps()
 	DX::ThrowIfFailed(CALL_INFO,
 		m_dxo.Device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&m_rtvDescriptorHeap))
 	);
-	m_dxo.m_RTVDescriptorSize = m_dxo.Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	m_dxo.RTVDescSize = m_dxo.Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
 	//CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());;
 	auto rtvHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(m_rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
@@ -456,7 +456,7 @@ void App::CreateRtvAndDsvDescriptorHeaps()
 		);
 		m_dxo.Device->CreateRenderTargetView(m_dxo.RenderTarget[i].Get(), nullptr, rtvHandle);
 
-		rtvHandle.Offset(1, m_dxo.m_RTVDescriptorSize);
+		rtvHandle.Offset(1, m_dxo.RTVDescSize);
 	}   
 	/*创建Stencil DepthBuffer View*/
 	D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc = {};
@@ -532,13 +532,13 @@ void App::CreateCommandObjects()
 	for (int i = 0; i < FrameBufferCount; i++)
 	{
 		DX::ThrowIfFailed(CALL_INFO,
-			m_dxo.Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_CommandAllocator[i]))
+			m_dxo.Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_dxo.m_CommandAllocator[i]))
 		);
 	} 
 
 	/*CPUCommandlist*/
 	DX::ThrowIfFailed(CALL_INFO,
-		m_dxo.Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_CommandAllocator[0], NULL, IID_PPV_ARGS(&m_dxo.CommandList))
+		m_dxo.Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_dxo.m_CommandAllocator[0].Get(), NULL, IID_PPV_ARGS(&m_dxo.CommandList))
 	); 
 }
  
@@ -564,7 +564,7 @@ void App::Run(std::function<void(App*)> app)
 		}
 	}
 	WaitForPreviousFrame();
-	CloseHandle(m_FenceEvent);
+	CloseHandle(m_dxo.m_FenceEvent);
 }
 
 LRESULT App::WinCallBack(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)

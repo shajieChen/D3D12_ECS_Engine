@@ -21,9 +21,7 @@ public:
 protected: /*Private Helper Method*/
 	void InitD3D12();
 	void InitMainWindow(HINSTANCE hInstance, int ShowWnd, int width, int height, bool isfullScreen);
-	void InitWindow(HINSTANCE& hInstance); 
-	void BuildRootSignature();
-
+	void InitWindow(HINSTANCE& hInstance);  
 
 	void testGrawTriangle();  /*deletable */
 	void UpdateTriangle(); /*deletable*/
@@ -40,8 +38,7 @@ protected: /*Private Helper Method*/
 	void CreateSwapChain();  
 	void CreateCommandObjects();
 
-	void FlushCommandQueue();
-
+	void FlushCommandQueue(); 
 
 
 private:
@@ -62,24 +59,7 @@ private:
 #pragma region Renderer  
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_rtvDescriptorHeap; 
 	Microsoft::WRL::ComPtr <ID3D12DescriptorHeap> dsDescriptorHeap;					//深度模板的描述符缓冲堆
-	Microsoft::WRL::ComPtr <ID3D12Resource> depthStencilBuffer;
-
-	/*GPUCommandQueue & CPUCommandList*/
-	ID3D12CommandAllocator* m_CommandAllocator[FrameBufferCount];		/*命令分配器*/
-
-		/*Fence CPU*/
-	//Microsoft::WRL::ComPtr<ID3D12Fence> m_Fence[FrameBufferCount];
-	HANDLE m_FenceEvent;
-	UINT64 m_FenceValue[FrameBufferCount];
-
-	ID3D12DescriptorHeap* mainDescriptorHeap[FrameBufferCount];						// 用于存储描述符的缓冲堆
-	ID3D12Resource* constantBufferUploadHeap[FrameBufferCount];						//每一帧上面都有特定的共享内存Buffer来进行传输CPU 端上的ConstantBuffer 
-
-	ConstantBuffer cbColorMultiplierData;											//用于vs中的VB/IB 和PS 中的颜色变化传入Buffer 
-
-	UINT8* cbColorMultiplierGPUAddress[FrameBufferCount];							// this is a pointer to the memory location we get when we map our constant buffer
-
-
+	Microsoft::WRL::ComPtr <ID3D12Resource> depthStencilBuffer; 
 #pragma endregion
 	
 #pragma region tmpObject
@@ -90,6 +70,13 @@ private:
 	Graphic::IndexBuffer IBViews;
 
 	std::unique_ptr<example::GeoRetangle> retExample;
+
+	ID3D12DescriptorHeap* mainDescriptorHeap[FrameBufferCount];						// 用于存储描述符的缓冲堆
+	ID3D12Resource* constantBufferUploadHeap[FrameBufferCount];						//每一帧上面都有特定的共享内存Buffer来进行传输CPU 端上的ConstantBuffer 
+
+	UINT8* cbColorMultiplierGPUAddress[FrameBufferCount];							// this is a pointer to the memory location we get when we map our constant buffer
+
+	ConstantBuffer cbColorMultiplierData;											//用于vs中的VB/IB 和PS 中的颜色变化传入Buffer 
 #pragma endregion 
 
 	/*屏幕*/

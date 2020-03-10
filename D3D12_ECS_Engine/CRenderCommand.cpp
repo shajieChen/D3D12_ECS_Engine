@@ -133,6 +133,14 @@ Graphic::Shader RenderCommand::CreateShader(LPCWSTR filePath) const
 	return shader;
 }
 
+void RenderCommand::CreatePSO(const D3D12_GRAPHICS_PIPELINE_STATE_DESC* psoDesc, ID3D12PipelineState* m_PipelineStateObject) const
+{
+	DX::ThrowIfFailed(CALL_INFO,
+		m_dxo.Device->CreateGraphicsPipelineState(psoDesc,
+			IID_PPV_ARGS(&m_PipelineStateObject))
+	);
+}
+
  
 void RenderCommand::Clear() const
 {
@@ -141,5 +149,34 @@ void RenderCommand::Clear() const
 void RenderCommand::Swap() const
 {
     m_dxo.SwapChain->Present(0, 0);
+}
+
+void RenderCommand::CPURecordStamp() const
+{ 
+	m_dxo.CommandList->Close();
+	ID3D12CommandList* ppCommandLists[] = { m_dxo.CommandList.Get() };
+	/*CPU上传到GPU CList */
+	m_dxo.m_CommandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
+
+	//添加m_Fence 保证在绘制之前
+	m_dxo.m_FenceValue[m_dxo.FrameIndex]++;
+	DX::ThrowIfFailed(CALL_INFO,
+		m_dxo.m_CommandQueue->Signal(m_dxo.m_Fence[m_dxo.FrameIndex].Get(), m_dxo.m_FenceValue[m_dxo.FrameIndex])
+	); 
+}
+
+void RenderCommand::WaitForPreviousFrame() const
+{
+	m_dxo.FrameIndex = m_dxo.SwapChain->GetCurrentBackBufferIndex();
+
+	if (m_dxo.m_Fence[m_dxo.FrameIndex]->GetCompletedValue() < m_dxo.m_FenceValue[m_dxo.FrameIndex])
+	{
+		DX::ThrowIfFailed(CALL_INFO,
+			m_dxo.m_Fence[m_dxo.FrameIndex]->SetEventOnCompletion(m_dxo.m_FenceValue[m_dxo.FrameIndex], m_dxo.m_FenceEvent)
+		);
+
+		WaitForSingleObject(m_dxo.m_FenceEvent, INFINITE);
+	}
+	m_dxo.m_FenceValue[m_dxo.FrameIndex]++;
 }
  

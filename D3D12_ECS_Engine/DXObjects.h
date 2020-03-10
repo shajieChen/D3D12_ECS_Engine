@@ -17,12 +17,11 @@ struct  DXObject
 	Microsoft::WRL::ComPtr<ID3D12CommandQueue> m_CommandQueue;			/*GPU命令队列*/
 	Microsoft::WRL::ComPtr<ID3D12Fence> m_Fence[FrameBufferCount];
 	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> m_CommandAllocator[FrameBufferCount];
+	UINT64 m_FenceValue[FrameBufferCount];
+	HANDLE m_FenceEvent; 
 
-
-
-	int m_FrameIndex; //当前RenderTarget
-	int m_RTVDescriptorSize;
-
+	int FrameIndex; //当前RenderTarget
+	int RTVDescSize;
 
 	const int frameBufferCount = FrameBufferCount;
 };
