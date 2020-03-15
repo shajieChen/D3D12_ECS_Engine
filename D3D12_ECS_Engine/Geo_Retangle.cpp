@@ -1,22 +1,22 @@
 #include "Geo_Retangle.h"
-#include "GeoFactory.h" 
+#include "GeoFactory.h"
 #include "SConstantBuffer.h"
 namespace example
 {
 	GeoRetangle::GeoRetangle(Graphic::Context& context) : m_ct(context)
 	{
-		GeoFactory geoFactory(context); 
+		GeoFactory geoFactory(context);
 
-		//vs  
+		//vs
 		Graphic::Shader vertexShader = m_ct.rcommand->CreateShader(L"DefaultVS.cso");
 		D3D12_SHADER_BYTECODE vertexShaderBytecode = { vertexShader.byteCode->GetBufferPointer(),
 													   vertexShader.byteCode->GetBufferSize() };
 
-		//ps 
+		//ps
 		Graphic::Shader pixelShader = m_ct.rcommand->CreateShader(L"DefaultPS.cso");
 		D3D12_SHADER_BYTECODE pixelShaderBytecode = { pixelShader.byteCode->GetBufferPointer(),
 													  pixelShader.byteCode->GetBufferSize() };
-		//ied 
+		//ied
 		D3D12_INPUT_ELEMENT_DESC inputLayout[] =
 		{
 			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
@@ -39,26 +39,22 @@ namespace example
 		psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
 		psoDesc.NumRenderTargets = 1;
 		psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
-		m_ct.rcommand->CreatePSO(&psoDesc ,m_PipelineStateObject.Get());
+		m_ct.rcommand->CreatePSO(&psoDesc, m_PipelineStateObject.Get());
 
 		Graphic::Mesh meshViews = geoFactory.CreateRetangle();
 		VBviews.VBViews.insert(VBviews.VBViews.end(), meshViews.VB.VBViews.begin(), meshViews.VB.VBViews.end());
 		IBViews.IBViews.insert(IBViews.IBViews.end(), meshViews.IB.IBViews.begin(), meshViews.IB.IBViews.end());
-
-
 	}
 	GeoRetangle::~GeoRetangle()
 	{
 	}
 
-
 	void GeoRetangle::Render()
 	{
 	}
-	 
+
 	void GeoRetangle::Update()
 	{
-		
 	}
 
 	void GeoRetangle::UpdateGUI()
@@ -68,5 +64,4 @@ namespace example
 	void GeoRetangle::Release()
 	{
 	}
-
 }

@@ -5,5 +5,4 @@ class WinMain
 {
 };
 
-
 #endif // !WINMAIN_H

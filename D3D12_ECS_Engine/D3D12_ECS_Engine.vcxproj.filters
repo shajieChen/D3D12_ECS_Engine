@@ -40,6 +40,12 @@
     <Filter Include="源文件\GeoFactory">
       <UniqueIdentifier>{a721a217-a5ac-418b-94b5-9efdd81ee596}</UniqueIdentifier>
     </Filter>
+    <Filter Include="源文件\Core\Core_CameraSys">
+      <UniqueIdentifier>{f0884698-43b6-4894-8383-e4db96c59d90}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\Core\Helper">
+      <UniqueIdentifier>{27a6d5f1-cb07-4a06-b469-47da769e892b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="WinMain.cpp">
@@ -62,6 +68,9 @@
     </ClCompile>
     <ClCompile Include="Geo_Retangle.cpp">
       <Filter>源文件\GeoFactory</Filter>
+    </ClCompile>
+    <ClCompile Include="CCamera.cpp">
+      <Filter>源文件\Core\Core_CameraSys</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -230,12 +239,24 @@
     <ClInclude Include="SShader.h">
       <Filter>源文件\Core\Core_Graphic</Filter>
     </ClInclude>
+    <ClInclude Include="CCamera.h">
+      <Filter>源文件\Core\Core_CameraSys</Filter>
+    </ClInclude>
+    <ClInclude Include="ImageLoader.h">
+      <Filter>源文件\Core\Helper</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="DefaultVS.hlsl">
       <Filter>资源文件</Filter>
     </FxCompile>
     <FxCompile Include="DefaultPS.hlsl">
+      <Filter>资源文件</Filter>
+    </FxCompile>
+    <FxCompile Include="cubeVS.hlsl">
+      <Filter>资源文件</Filter>
+    </FxCompile>
+    <FxCompile Include="cubePS.hlsl">
       <Filter>资源文件</Filter>
     </FxCompile>
   </ItemGroup>

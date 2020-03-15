@@ -6,6 +6,6 @@ namespace Graphic
 	struct Context
 	{
 		Context() {}
-		std::unique_ptr<RenderCommand> rcommand; 
+		std::unique_ptr<RenderCommand> rcommand;
 	};
 }

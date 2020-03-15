@@ -1,6 +1,6 @@
 #pragma once
 
-namespace ULT { 
+namespace ULT {
 	/**
 	 * @brief A simple timer that provides elapsed time information
 	 */
@@ -130,5 +130,5 @@ namespace ULT {
 		// Members for configuring fixed timestep mode.
 		bool m_isFixedTimeStep;
 		uint64_t m_targetElapsedTicks;
-	}; 
+	};
 };

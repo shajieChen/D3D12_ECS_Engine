@@ -1,7 +1,7 @@
-#pragma once 
+#pragma once
 #include <DirectXMath.h>
 
-struct ConstantBuffer 
+struct ConstantBuffer
 {
-	DirectX::XMFLOAT4 colorMultiplier;
+	DirectX::XMFLOAT4X4 WorldViewProjection;;
 };
