@@ -65,9 +65,8 @@ Graphic::AttributeBuffer RenderCommand::CreateDefaultBuffer(void* vertices, unsi
 	return ab;
 }
 
-ID3D12RootSignature* RenderCommand::CreateRootSignature() const
-{
-	ID3D12RootSignature* RootSignature;
+void RenderCommand::CreateRootSignature(ID3D12RootSignature* rootSignature) const
+{ 
 
 	D3D12_ROOT_DESCRIPTOR rootCBVDescriptor;
 	rootCBVDescriptor.RegisterSpace = 0;
@@ -120,13 +119,13 @@ ID3D12RootSignature* RenderCommand::CreateRootSignature() const
 		D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
 		D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS);
 
-	Microsoft::WRL::ComPtr<ID3DBlob> signature;
-	Microsoft::WRL::ComPtr<ID3DBlob> errorBlob = nullptr;
+	ID3DBlob* signature;
+	ID3DBlob* errorBlob;
 	DX::ThrowIfFailed(CALL_INFO,
 		D3D12SerializeRootSignature(&rootSignatureDesc,
 			D3D_ROOT_SIGNATURE_VERSION_1,
-			signature.GetAddressOf(),
-			errorBlob.GetAddressOf())
+			&signature,
+			&errorBlob)
 	);
 	if (errorBlob != nullptr)
 	{
@@ -136,9 +135,8 @@ ID3D12RootSignature* RenderCommand::CreateRootSignature() const
 		m_dxo.Device->CreateRootSignature(0,
 			signature->GetBufferPointer(),
 			signature->GetBufferSize(),
-			IID_PPV_ARGS(&RootSignature))
-	);
-	return RootSignature;
+			IID_PPV_ARGS(&rootSignature))
+	); 
 }
 
 Graphic::Shader RenderCommand::CreateShader(LPCWSTR filePath) const

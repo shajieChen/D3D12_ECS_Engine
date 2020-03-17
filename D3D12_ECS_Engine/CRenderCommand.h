@@ -24,7 +24,7 @@ public:
 
 	/*
 	*/
-	ID3D12RootSignature* CreateRootSignature() const;
+	void CreateRootSignature(ID3D12RootSignature* rootSignature) const;
 
 	//TODO: Create Shader
 	Graphic::Shader CreateShader(LPCWSTR filePath) const;

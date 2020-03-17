@@ -21,14 +21,34 @@ LRESULT CALLBACK WndProMessage(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 App::App(HINSTANCE hInstance, int ShowWnd, int width, int height, bool fullScreen)
 {
 	instance = this;
+#ifndef  NDEBUG
+	std::cout << "Start init" << std::endl;
+#endif // ! NDEBUG
 	this->InitMainWindow(hInstance, ShowWnd, width, height, fullScreen);
+#ifndef  NDEBUG
+		std::cout << "finiahed init WND" << std::endl;
+#endif // ! NDEBUG
 	this->InitD3D12();
-	this->InitWindow(hInstance); 
+#ifndef  NDEBUG
+	std::cout << "finiahed D3D12" << std::endl;
+#endif // ! NDEBUG
+	this->InitWindow(hInstance);
+#ifndef  NDEBUG
+	std::cout << "after the windowed created" << std::endl;
+#endif // ! NDEBUG
 	m_ct.rcommand = std::make_unique<RenderCommand>(m_dxo);
 
-	m_RootSignature = m_ct.rcommand->CreateRootSignature();
+	m_ct.rcommand->CreateRootSignature(m_RootSignature.Get());
+#ifndef  NDEBUG
+	std::cout << "after the rootSignature Created" << std::endl; 
+#endif // ! NDEBUG
 	this->testGrawTriangle();
 	//retExample = std::make_unique<example::GeoRetangle>(m_ct);
+#ifndef  NDEBUG
+	std::cout << "Finished Init" << std::endl; 
+
+#endif // ! NDEBUG
+
 }
 
 App::~App()
@@ -154,7 +174,7 @@ void App::InitD3D12()
 	);
 
 	CreateCommandObjects();
-	CreateSwapChain();
+	CreateSwapChain(); 
 	CreateRtvAndDsvDescriptorHeaps();
 
 	/*CPUFence*/
@@ -193,6 +213,9 @@ void App::InitWindow(HINSTANCE& hInstance)
 void App::testGrawTriangle()
 {
 	example::GeoFactory geoFactory(m_ct);
+#ifndef NDEBUG
+	std::cout << "test1" << std::endl;
+#endif // !NDEBUG
 
 	//vs
 	Graphic::Shader vertexShader = m_ct.rcommand->CreateShader(L"DefaultVS.cso");
@@ -209,31 +232,45 @@ void App::testGrawTriangle()
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 	};
+
 	D3D12_INPUT_LAYOUT_DESC inputLayoutDesc = {};
 	inputLayoutDesc.NumElements = sizeof(inputLayout) / sizeof(D3D12_INPUT_ELEMENT_DESC);
 	inputLayoutDesc.pInputElementDescs = inputLayout;
 
+	DXGI_SAMPLE_DESC sampleDesc = {};
+	sampleDesc.Count = 1;
+#ifndef NDEBUG
+	std::cout << "test2" << std::endl;
+#endif // !NDEBUG
+
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
-	psoDesc.InputLayout = { inputLayout, sizeof(inputLayout) / sizeof(D3D12_INPUT_ELEMENT_DESC) };
+	psoDesc.InputLayout = inputLayoutDesc; 
 	psoDesc.pRootSignature = m_RootSignature.Get();
-	psoDesc.VS = vertexShaderBytecode;
-	psoDesc.PS = pixelShaderBytecode;
-	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-	psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
-	psoDesc.SampleDesc = { 1 };
-	psoDesc.SampleMask = 0xffffffff;
-	psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+	psoDesc.VS = vertexShaderBytecode; 
+	psoDesc.PS = pixelShaderBytecode; 
+	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE; 
+	psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM; 
+	psoDesc.SampleDesc = sampleDesc; 
+	psoDesc.SampleMask = 0xffffffff; 
+	psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT); 
 	psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
-	psoDesc.NumRenderTargets = 1;
-	psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+	psoDesc.NumRenderTargets = 1; 
+	psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT); 
+
 	DX::ThrowIfFailed(CALL_INFO,
 		m_dxo.Device->CreateGraphicsPipelineState(&psoDesc,
 			IID_PPV_ARGS(&m_PipelineStateObject))
 	);
+#ifndef NDEBUG
+	std::cout << "test3" << std::endl;
+#endif // !NDEBUG
 
 	Graphic::Mesh meshViews = geoFactory.CreateBox();
 	VBviews.VBViews.insert(VBviews.VBViews.end(), meshViews.VB.VBViews.begin(), meshViews.VB.VBViews.end());
 	IBViews.IBViews.insert(IBViews.IBViews.end(), meshViews.IB.IBViews.begin(), meshViews.IB.IBViews.end());
+#ifndef NDEBUG
+	std::cout << "test4" << std::endl; 
+#endif // !NDEBUG
 
 	//// 为每一帧都创建一个常量缓冲区描述符
 	//for (int i = 0; i < m_dxo.frameBufferCount; ++i)
@@ -571,11 +608,13 @@ void App::CreateRtvAndDsvDescriptorHeaps()
 
 		rtvHandle.Offset(1, m_dxo.RTVDescSize);
 	}
+	 
 	/*创建Stencil DepthBuffer View*/
 	D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc = {};
 	dsvHeapDesc.NumDescriptors = 1;
 	dsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
 	dsvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+	m_dxo.Device->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&dsDescriptorHeap)); 
 
 	D3D12_DEPTH_STENCIL_VIEW_DESC depthStencilDesc = {};
 	depthStencilDesc.Format = DXGI_FORMAT_D32_FLOAT;
@@ -587,16 +626,16 @@ void App::CreateRtvAndDsvDescriptorHeaps()
 	depthOptimizedClearValue.DepthStencil.Depth = 1.0f;
 	depthOptimizedClearValue.DepthStencil.Stencil = 0;
 
-	m_dxo.Device->CreateCommittedResource(
-		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
-		D3D12_HEAP_FLAG_NONE,
-		&CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_D32_FLOAT, m_Width, m_Height, 1, 0, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL),
-		D3D12_RESOURCE_STATE_DEPTH_WRITE,
-		&depthOptimizedClearValue,
-		IID_PPV_ARGS(&depthStencilBuffer)
-	);
-	//m_dxo.Device->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&dsDescriptorHeap));
-
+	DX::ThrowIfFailed(CALL_INFO,  
+		m_dxo.Device->CreateCommittedResource(
+			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+			D3D12_HEAP_FLAG_NONE,
+			&CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_D32_FLOAT, m_Width, m_Height, 1, 0, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL),
+			D3D12_RESOURCE_STATE_DEPTH_WRITE,
+			&depthOptimizedClearValue,
+			IID_PPV_ARGS(&depthStencilBuffer)
+		)
+	);  
 	dsDescriptorHeap->SetName(L"Depth/Stencil Resource Heap");
 
 	m_dxo.Device->CreateDepthStencilView(depthStencilBuffer.Get(),
