@@ -21,7 +21,7 @@ Graphic::AttributeBuffer RenderCommand::CreateDefaultBuffer(void* vertices, unsi
 			nullptr,
 			IID_PPV_ARGS(&dataBuffer))
 	);
-	dataBuffer->SetName(L"Vertex Buffer Resource Heap");
+	dataBuffer->SetName(L"Resource Heap");
 
 	/*上传中间缓冲区*/
 	ID3D12Resource* interUploadHeap;
@@ -36,7 +36,7 @@ Graphic::AttributeBuffer RenderCommand::CreateDefaultBuffer(void* vertices, unsi
 			IID_PPV_ARGS(&interUploadHeap)
 		)
 	);
-	interUploadHeap->SetName(L"Vertex Buffer Upload Resource Heap");
+	interUploadHeap->SetName(L"Upload Resource Heap");
 
 	//传输到上传缓冲区
 	D3D12_SUBRESOURCE_DATA data = {};
@@ -51,12 +51,14 @@ Graphic::AttributeBuffer RenderCommand::CreateDefaultBuffer(void* vertices, unsi
 	ab.StrideInByte = stride;
 	ab.ByteWidth = count * stride;
 
-	m_dxo.CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(ab.DataBuffer.Get(),
-		D3D12_RESOURCE_STATE_COMMON,
-		D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
 	UpdateSubresources(m_dxo.CommandList.Get(),
 		ab.DataBuffer.Get(),
 		ab.UploadBuffer.Get(), 0, 0, 1, &data);
+
+	//m_dxo.CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(ab.DataBuffer.Get(),
+	//	D3D12_RESOURCE_STATE_COMMON,
+	//	D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
+
 	m_dxo.CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(ab.DataBuffer.Get(),
 		D3D12_RESOURCE_STATE_COPY_DEST,
 		D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));

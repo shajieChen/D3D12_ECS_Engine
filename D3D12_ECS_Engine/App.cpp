@@ -38,7 +38,7 @@ App::App(HINSTANCE hInstance, int ShowWnd, int width, int height, bool fullScree
 #endif // ! NDEBUG
 	m_ct.rcommand = std::make_unique<RenderCommand>(m_dxo);
 
-	m_ct.rcommand->CreateRootSignature(m_RootSignature.Get());
+	//m_ct.rcommand->CreateRootSignature(m_RootSignature.Get());
 #ifndef  NDEBUG
 	std::cout << "after the rootSignature Created" << std::endl; 
 #endif // ! NDEBUG
@@ -217,6 +217,61 @@ void App::testGrawTriangle()
 	std::cout << "test1" << std::endl;
 #endif // !NDEBUG
 
+#pragma region test 
+	D3D12_ROOT_DESCRIPTOR rootCBVDescriptor;
+	rootCBVDescriptor.RegisterSpace = 0;
+	rootCBVDescriptor.ShaderRegister = 0;
+
+	D3D12_DESCRIPTOR_RANGE  descriptorTableRanges[1]; // only one range right now
+	descriptorTableRanges[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // this is a range of shader resource views (descriptors)
+	descriptorTableRanges[0].NumDescriptors = 1; // we only have one texture right now, so the range is only 1
+	descriptorTableRanges[0].BaseShaderRegister = 0; // start index of the shader registers in the range
+	descriptorTableRanges[0].RegisterSpace = 0; // space 0. can usually be zero
+	descriptorTableRanges[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // this appends the range to the end of the root signature descriptor tables
+
+	D3D12_ROOT_DESCRIPTOR_TABLE descriptorTable;
+	descriptorTable.NumDescriptorRanges = _countof(descriptorTableRanges); // we only have one range
+	descriptorTable.pDescriptorRanges = &descriptorTableRanges[0]; // the pointer to the beginning of our ranges array
+
+	D3D12_ROOT_PARAMETER  rootParameters[2]; // only one parameter right now
+	rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // this is a constant buffer view root descriptor
+	rootParameters[0].Descriptor = rootCBVDescriptor; // this is the root descriptor for this root parameter
+	rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX; // our pixel shader will be the only shader accessing this parameter for now
+
+	rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // this is a descriptor table
+	rootParameters[1].DescriptorTable = descriptorTable; // this is our descriptor table for this root parameter
+	rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // our pixel shader will be the only shader accessing this parameter for now
+
+	D3D12_STATIC_SAMPLER_DESC sampler = {};
+	sampler.Filter = D3D12_FILTER_MIN_MAG_MIP_POINT;
+	sampler.AddressU = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
+	sampler.AddressV = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
+	sampler.AddressW = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
+	sampler.MipLODBias = 0;
+	sampler.MaxAnisotropy = 0;
+	sampler.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
+	sampler.BorderColor = D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK;
+	sampler.MinLOD = 0.0f;
+	sampler.MaxLOD = D3D12_FLOAT32_MAX;
+	sampler.ShaderRegister = 0;
+	sampler.RegisterSpace = 0;
+	sampler.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+
+	CD3DX12_ROOT_SIGNATURE_DESC rootSignatureDesc;
+	rootSignatureDesc.Init(_countof(rootParameters),  
+		rootParameters, 
+		1, 
+		&sampler, 
+		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT | 
+		D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
+		D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
+		D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS);
+
+	ID3DBlob* signature;
+	D3D12SerializeRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, nullptr);
+	m_dxo.Device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&m_RootSignature));
+#pragma endregion 
+
 	//vs
 	Graphic::Shader vertexShader = m_ct.rcommand->CreateShader(L"DefaultVS.cso");
 	D3D12_SHADER_BYTECODE vertexShaderBytecode = { vertexShader.byteCode->GetBufferPointer(),
@@ -239,13 +294,10 @@ void App::testGrawTriangle()
 
 	DXGI_SAMPLE_DESC sampleDesc = {};
 	sampleDesc.Count = 1;
-#ifndef NDEBUG
-	std::cout << "test2" << std::endl;
-#endif // !NDEBUG
 
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
 	psoDesc.InputLayout = inputLayoutDesc; 
-	psoDesc.pRootSignature = m_RootSignature.Get();
+	psoDesc.pRootSignature = m_RootSignature;
 	psoDesc.VS = vertexShaderBytecode; 
 	psoDesc.PS = pixelShaderBytecode; 
 	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE; 
@@ -256,31 +308,16 @@ void App::testGrawTriangle()
 	psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
 	psoDesc.NumRenderTargets = 1; 
 	psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT); 
-
+	 
 	DX::ThrowIfFailed(CALL_INFO,
 		m_dxo.Device->CreateGraphicsPipelineState(&psoDesc,
 			IID_PPV_ARGS(&m_PipelineStateObject))
-	);
-#ifndef NDEBUG
-	std::cout << "test3" << std::endl;
-#endif // !NDEBUG
+	); 
 
 	Graphic::Mesh meshViews = geoFactory.CreateBox();
 	VBviews.VBViews.insert(VBviews.VBViews.end(), meshViews.VB.VBViews.begin(), meshViews.VB.VBViews.end());
 	IBViews.IBViews.insert(IBViews.IBViews.end(), meshViews.IB.IBViews.begin(), meshViews.IB.IBViews.end());
-#ifndef NDEBUG
-	std::cout << "test4" << std::endl; 
-#endif // !NDEBUG
 
-	//// 为每一帧都创建一个常量缓冲区描述符
-	//for (int i = 0; i < m_dxo.frameBufferCount; ++i)
-	//{
-	//	D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
-	//	heapDesc.NumDescriptors = 1;
-	//	heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-	//	heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-	//	m_dxo.Device->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&mainDescriptorHeap[i]));
-	//}
 
 	// 创建上传缓冲区(共享缓冲区) --- 包括 resources heap/Descriptor Heap/指向ConstantBufferView的指针
 	for (int i = 0; i < m_dxo.frameBufferCount; ++i)
@@ -297,9 +334,9 @@ void App::testGrawTriangle()
 		ZeroMemory(&cbPerObject, sizeof(cbPerObject));
 
 		CD3DX12_RANGE readRange(0, 0);    // We do not intend to read from this resource on the CPU. (End is less than or equal to begin)
-		constantBufferUploadHeap[i]->Map(0, &readRange, reinterpret_cast<void**>(&cbGPUAddress[i]));
-		memcpy(cbGPUAddress[i], &cbPerObject, sizeof(cbPerObject));
-		memcpy(cbGPUAddress[i] + ConstantBufferPerObjectAlignedSize, &cbPerObject, sizeof(cbPerObject));
+		constantBufferUploadHeap[i]->Map(0, &readRange, reinterpret_cast<void**>(&cbvGPUAddress[i]));
+		memcpy(cbvGPUAddress[i], &cbPerObject, sizeof(cbPerObject));
+		memcpy(cbvGPUAddress[i] + ConstantBufferPerObjectAlignedSize, &cbPerObject, sizeof(cbPerObject));
 	}
 
 	D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
@@ -368,7 +405,7 @@ void App::testGrawTriangle()
 
 	m_dxo.CommandList->Close();
 	ID3D12CommandList* ppCommandLists[] = { m_dxo.CommandList.Get() };
-	m_dxo.m_CommandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists); 
+	m_dxo.m_CommandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists); 	 
 
 	//添加m_Fence 保证再会之前
 	m_dxo.m_FenceValue[m_dxo.FrameIndex]++;
@@ -416,31 +453,32 @@ void App::testGrawTriangle()
 void App::UpdateTriangle()
 {
 	m_ct.rcommand->WaitForPreviousFrame();
-
+	 
 	DX::ThrowIfFailed(CALL_INFO,
 		m_dxo.m_CommandAllocator[m_dxo.FrameIndex]->Reset()
-	);
-	DX::ThrowIfFailed(CALL_INFO,
-		m_dxo.CommandList->Reset(m_dxo.m_CommandAllocator[m_dxo.FrameIndex].Get(), m_PipelineStateObject.Get())
-	);
+	);  
 
+	DX::ThrowIfFailed(CALL_INFO,
+		m_dxo.CommandList.Get()->Reset(m_dxo.m_CommandAllocator[m_dxo.FrameIndex].Get(), m_PipelineStateObject.Get())
+	); 
+	 
 	m_dxo.CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_dxo.RenderTarget[m_dxo.FrameIndex].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), m_dxo.FrameIndex, m_dxo.RTVDescSize);
 	CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle(dsDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 	m_dxo.CommandList->OMSetRenderTargets(1, &rtvHandle, FALSE, &dsvHandle);
-
 	const float clearColor[] = { 0.2f, 0.2f, 0.2f, 1.0f };
 	m_dxo.CommandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
 	m_dxo.CommandList->ClearDepthStencilView(dsDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+
+
 	/*开始绘制*/
-	m_dxo.CommandList->SetGraphicsRootSignature(m_RootSignature.Get());
+	m_dxo.CommandList->SetGraphicsRootSignature(m_RootSignature);
 
 	ID3D12DescriptorHeap* descriptorHeaps[] = { mainDescriptorHeap };
 	m_dxo.CommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
 
-	// set the descriptor table to the descriptor heap (parameter 1, as constant buffer root descriptor is parameter index 0)
+	// 设置描述符队列到描述符堆中
 	m_dxo.CommandList->SetGraphicsRootDescriptorTable(1, mainDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
-
 	m_dxo.CommandList->RSSetViewports(1, &m_ViewPort);
 	m_dxo.CommandList->RSSetScissorRects(1, &m_ScissorRect);
 	m_dxo.CommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -448,14 +486,12 @@ void App::UpdateTriangle()
 	m_dxo.CommandList->IASetIndexBuffer(IBViews.IBViews.data());
 	m_dxo.CommandList->SetGraphicsRootConstantBufferView(0, constantBufferUploadHeap[m_dxo.FrameIndex]->GetGPUVirtualAddress());
 
-	// draw first cube
+	// 绘制第一个正反体
 	m_dxo.CommandList->DrawIndexedInstanced(numCubeIndices, 1, 0, 0, 0);
 
-	// second cube
-	// cube2's constant buffer data is stored after (256 bits from the start of the heap).
 	m_dxo.CommandList->SetGraphicsRootConstantBufferView(0, constantBufferUploadHeap[m_dxo.FrameIndex]->GetGPUVirtualAddress() + ConstantBufferPerObjectAlignedSize);
 
-	// draw second cube
+	// 绘制第二个
 	m_dxo.CommandList->DrawIndexedInstanced(numCubeIndices, 1, 0, 0, 0);
 
 	m_dxo.CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_dxo.RenderTarget[m_dxo.FrameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
@@ -470,66 +506,52 @@ void App::Update()
 	XMMATRIX rotXMat = XMMatrixRotationX(0.0001f);
 	XMMATRIX rotYMat = XMMatrixRotationY(0.0002f);
 	XMMATRIX rotZMat = XMMatrixRotationZ(0.0003f);
-
-		/*设置旋转矩阵 */
+	 
 	XMMATRIX rotMat = XMLoadFloat4x4(&cube1RotMat) * rotXMat * rotYMat * rotZMat;
 	XMStoreFloat4x4(&cube1RotMat, rotMat);
-
+	 
 	XMMATRIX translationMat = XMMatrixTranslationFromVector(XMLoadFloat4(&cube1Position));
-
-	/*设置世界矩阵*/
+	 
 	XMMATRIX worldMat = rotMat * translationMat;
 	 
 	XMStoreFloat4x4(&cube1WorldMat, worldMat);
-
-	// 更新常量缓冲区	
-	XMMATRIX viewMat = XMLoadFloat4x4(&cameraViewMat); // 加载camera 的view 矩阵
-	XMMATRIX projMat = XMLoadFloat4x4(&cameraProjMat); // 加载projection矩阵
-	XMMATRIX wvpMat = XMLoadFloat4x4(&cube1WorldMat) * viewMat * projMat; // 创建MVP 
-	XMMATRIX transposed = XMMatrixTranspose(wvpMat); // 转至成GPU 可读的列矩阵
-	XMStoreFloat4x4(&cbPerObject.WorldViewProjection, transposed); // 存储到常量缓冲区中 
-
-													  // copy our ConstantBuffer instance to the mapped constant buffer resource
+	 
+	XMMATRIX viewMat = XMLoadFloat4x4(&cameraViewMat); 
+	XMMATRIX projMat = XMLoadFloat4x4(&cameraProjMat); 
+	XMMATRIX wvpMat = XMLoadFloat4x4(&cube1WorldMat) * viewMat * projMat; 
+	XMMATRIX transposed = XMMatrixTranspose(wvpMat); 
+	XMStoreFloat4x4(&cbPerObject.WorldViewProjection, transposed);
+ 
+													  
 	memcpy(cbvGPUAddress[m_dxo.FrameIndex], &cbPerObject, sizeof(cbPerObject));
-
-	// now do cube2's world matrix
-	// create rotation matrices for cube2
+	 
 	rotXMat = XMMatrixRotationX(0.0003f);
 	rotYMat = XMMatrixRotationY(0.0002f);
 	rotZMat = XMMatrixRotationZ(0.0001f);
-
-	// add rotation to cube2's rotation matrix and store it
+	 
 	rotMat = rotZMat * (XMLoadFloat4x4(&cube2RotMat) * (rotXMat * rotYMat));
 	XMStoreFloat4x4(&cube2RotMat, rotMat);
-
-	// create translation matrix for cube 2 to offset it from cube 1 (its position relative to cube1
+	 
 	XMMATRIX translationOffsetMat = XMMatrixTranslationFromVector(XMLoadFloat4(&cube2PositionOffset));
-
-	// we want cube 2 to be half the size of cube 1, so we scale it by .5 in all dimensions
+	 
 	XMMATRIX scaleMat = XMMatrixScaling(0.5f, 0.5f, 0.5f);
-
-	// reuse worldMat. 
-	// first we scale cube2. scaling happens relative to point 0,0,0, so you will almost always want to scale first
-	// then we translate it. 
-	// then we rotate it. rotation always rotates around point 0,0,0
-	// finally we move it to cube 1's position, which will cause it to rotate around cube 1
+	 
 	worldMat = scaleMat * translationOffsetMat * rotMat * translationMat;
 
-	wvpMat = XMLoadFloat4x4(&cube2WorldMat) * viewMat * projMat; // create wvp matrix
-	transposed = XMMatrixTranspose(wvpMat); // must transpose wvp matrix for the gpu
-	XMStoreFloat4x4(&cbPerObject.WorldViewProjection, transposed); // store transposed wvp matrix in constant buffer
-
-													  // copy our ConstantBuffer instance to the mapped constant buffer resource
+	wvpMat = XMLoadFloat4x4(&cube2WorldMat) * viewMat * projMat;
+	transposed = XMMatrixTranspose(wvpMat); 
+	XMStoreFloat4x4(&cbPerObject.WorldViewProjection, transposed); 
+													  
 	memcpy(cbvGPUAddress[m_dxo.FrameIndex] + ConstantBufferPerObjectAlignedSize, &cbPerObject, sizeof(cbPerObject));
 
-	// store cube2's world matrix
 	XMStoreFloat4x4(&cube2WorldMat, worldMat);
 }
 
 void App::Render()
 {
 	UpdateTriangle(); //test
-	ID3D12CommandList* ppCommandLists[] = { m_dxo.CommandList.Get() };
+
+	ID3D12CommandList* ppCommandLists[] = { m_dxo.CommandList.Get() }; 
 	//CPU 传递CommandList 到CommandQueue
 	m_dxo.m_CommandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
 	/*GPU 设置围栏值*/
@@ -568,8 +590,8 @@ void App::CleanUp()
 		constantBufferUploadHeap[i]->Release();
 	}; 
 	mainDescriptorHeap->Release();
-	m_PipelineStateObject.Reset();
-	m_RootSignature.Reset();
+	m_PipelineStateObject.Get()->Release();
+	m_RootSignature->Release();
 
 	depthStencilBuffer.Reset();
 	dsDescriptorHeap.Reset();
@@ -684,13 +706,13 @@ void App::CreateCommandObjects()
 	for (int i = 0; i < FrameBufferCount; i++)
 	{
 		DX::ThrowIfFailed(CALL_INFO,
-			m_dxo.Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_dxo.m_CommandAllocator[i]))
+			m_dxo.Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(m_dxo.m_CommandAllocator[i].GetAddressOf()))
 		);
 	}
 
 	/*CPUCommandlist*/
 	DX::ThrowIfFailed(CALL_INFO,
-		m_dxo.Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_dxo.m_CommandAllocator[0].Get(), NULL, IID_PPV_ARGS(&m_dxo.CommandList))
+		m_dxo.Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_dxo.m_CommandAllocator->Get(), NULL, IID_PPV_ARGS(m_dxo.CommandList.GetAddressOf()))
 	);
 }
 
@@ -710,9 +732,21 @@ void App::Run(std::function<void(App*)> app)
 			{
 				app(this);
 			}
+
+#ifndef NDEBUG
+			std::cout << "Before Update" << std::endl;
+#endif // !NDEBUG
 			Update();
+#ifndef NDEBUG
+			std::cout << "After Update" << std::endl; 
+#endif // !NDEBUG
+
 			//绘制
 			Render();
+#ifndef NDEBUG
+			std::cout << "after Render()" << std::endl;
+#endif // !NDEBUG
+
 		}
 	}
 	m_ct.rcommand->WaitForPreviousFrame();

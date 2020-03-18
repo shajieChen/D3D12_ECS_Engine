@@ -62,7 +62,7 @@ private:
 
 #pragma region tmpObject
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_PipelineStateObject;
-	Microsoft::WRL::ComPtr<ID3D12RootSignature> m_RootSignature;
+	ID3D12RootSignature* m_RootSignature;
 
 	Graphic::VertexBuffer VBviews;
 	Graphic::IndexBuffer IBViews;
@@ -74,8 +74,7 @@ private:
 	ID3D12DescriptorHeap* mainDescriptorHeap;
 	ID3D12Resource* textureBufferUploadHeap;										// 用于存储描述符的缓冲堆
 	ID3D12Resource* constantBufferUploadHeap[FrameBufferCount];						//每一帧上面都有特定的共享内存Buffer来进行传输CPU 端上的ConstantBuffer
-
-	UINT8* cbGPUAddress[FrameBufferCount];
+	 
 	ConstantBuffer cbPerObject;														//用于vs中的VB/IB 和PS 中的颜色变化传入Buffer
 	int ConstantBufferPerObjectAlignedSize = (sizeof(ConstantBuffer) + 255) & ~255;
 	UINT8* cbvGPUAddress[FrameBufferCount];											// 用于存储存放常量缓冲区的指针
