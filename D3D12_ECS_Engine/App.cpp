@@ -20,34 +20,15 @@ LRESULT CALLBACK WndProMessage(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 }
 App::App(HINSTANCE hInstance, int ShowWnd, int width, int height, bool fullScreen)
 {
-	instance = this;
-#ifndef  NDEBUG
-	std::cout << "Start init" << std::endl;
-#endif // ! NDEBUG
-	this->InitMainWindow(hInstance, ShowWnd, width, height, fullScreen);
-#ifndef  NDEBUG
-		std::cout << "finiahed init WND" << std::endl;
-#endif // ! NDEBUG
-	this->InitD3D12();
-#ifndef  NDEBUG
-	std::cout << "finiahed D3D12" << std::endl;
-#endif // ! NDEBUG
-	this->InitWindow(hInstance);
-#ifndef  NDEBUG
-	std::cout << "after the windowed created" << std::endl;
-#endif // ! NDEBUG
+	instance = this; 
+	this->InitMainWindow(hInstance, ShowWnd, width, height, fullScreen); 
+	this->InitD3D12(); 
+	this->InitWindow(hInstance); 
 	m_ct.rcommand = std::make_unique<RenderCommand>(m_dxo);
 
-	//m_ct.rcommand->CreateRootSignature(m_RootSignature.Get());
-#ifndef  NDEBUG
-	std::cout << "after the rootSignature Created" << std::endl; 
-#endif // ! NDEBUG
-	this->testGrawTriangle();
-	//retExample = std::make_unique<example::GeoRetangle>(m_ct);
-#ifndef  NDEBUG
-	std::cout << "Finished Init" << std::endl; 
-
-#endif // ! NDEBUG
+	//m_ct.rcommand->CreateRootSignature(m_RootSignature.Get()); 
+	this->initResource();
+	//retExample = std::make_unique<example::GeoRetangle>(m_ct); 
 
 }
 
@@ -210,75 +191,75 @@ void App::InitWindow(HINSTANCE& hInstance)
 	m_ScissorRect.bottom = m_Height;
 }
 
-void App::testGrawTriangle()
+void App::initResource()
 {
 	example::GeoFactory geoFactory(m_ct);
 #ifndef NDEBUG
 	std::cout << "test1" << std::endl;
-#endif // !NDEBUG
+#endif // !NDEBUG 
 
-#pragma region test 
-	D3D12_ROOT_DESCRIPTOR rootCBVDescriptor;
-	rootCBVDescriptor.RegisterSpace = 0;
-	rootCBVDescriptor.ShaderRegister = 0;
+	DX::ThrowIfFailed(CALL_INFO,
+		m_dxo.CommandList.Get()->Reset(m_dxo.m_CommandAllocator[m_dxo.FrameIndex].Get(), m_PipelineStateObject.Get())
+	);
 
-	D3D12_DESCRIPTOR_RANGE  descriptorTableRanges[1]; // only one range right now
-	descriptorTableRanges[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // this is a range of shader resource views (descriptors)
-	descriptorTableRanges[0].NumDescriptors = 1; // we only have one texture right now, so the range is only 1
-	descriptorTableRanges[0].BaseShaderRegister = 0; // start index of the shader registers in the range
-	descriptorTableRanges[0].RegisterSpace = 0; // space 0. can usually be zero
-	descriptorTableRanges[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // this appends the range to the end of the root signature descriptor tables
+#pragma region RootDescriptor
+	//D3D12_ROOT_DESCRIPTOR rootCBVDescriptor;
+	//rootCBVDescriptor.RegisterSpace = 0;
+	//rootCBVDescriptor.ShaderRegister = 0;
 
-	D3D12_ROOT_DESCRIPTOR_TABLE descriptorTable;
-	descriptorTable.NumDescriptorRanges = _countof(descriptorTableRanges); // we only have one range
-	descriptorTable.pDescriptorRanges = &descriptorTableRanges[0]; // the pointer to the beginning of our ranges array
+	//D3D12_DESCRIPTOR_RANGE  descriptorTableRanges[1]; // only one range right now
+	//descriptorTableRanges[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // this is a range of shader resource views (descriptors)
+	//descriptorTableRanges[0].NumDescriptors = 1; // we only have one texture right now, so the range is only 1
+	//descriptorTableRanges[0].BaseShaderRegister = 0; // start index of the shader registers in the range
+	//descriptorTableRanges[0].RegisterSpace = 0; // space 0. can usually be zero
+	//descriptorTableRanges[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // this appends the range to the end of the root signature descriptor tables
 
-	D3D12_ROOT_PARAMETER  rootParameters[2]; // only one parameter right now
-	rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // this is a constant buffer view root descriptor
-	rootParameters[0].Descriptor = rootCBVDescriptor; // this is the root descriptor for this root parameter
-	rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX; // our pixel shader will be the only shader accessing this parameter for now
+	//D3D12_ROOT_DESCRIPTOR_TABLE descriptorTable;
+	//descriptorTable.NumDescriptorRanges = _countof(descriptorTableRanges); // we only have one range
+	//descriptorTable.pDescriptorRanges = &descriptorTableRanges[0]; // the pointer to the beginning of our ranges array
 
-	rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // this is a descriptor table
-	rootParameters[1].DescriptorTable = descriptorTable; // this is our descriptor table for this root parameter
-	rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // our pixel shader will be the only shader accessing this parameter for now
+	//D3D12_ROOT_PARAMETER  rootParameters[2]; // only one parameter right now
+	//rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // this is a constant buffer view root descriptor
+	//rootParameters[0].Descriptor = rootCBVDescriptor; // this is the root descriptor for this root parameter
+	//rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX; // our pixel shader will be the only shader accessing this parameter for now
 
-	D3D12_STATIC_SAMPLER_DESC sampler = {};
-	sampler.Filter = D3D12_FILTER_MIN_MAG_MIP_POINT;
-	sampler.AddressU = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
-	sampler.AddressV = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
-	sampler.AddressW = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
-	sampler.MipLODBias = 0;
-	sampler.MaxAnisotropy = 0;
-	sampler.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
-	sampler.BorderColor = D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK;
-	sampler.MinLOD = 0.0f;
-	sampler.MaxLOD = D3D12_FLOAT32_MAX;
-	sampler.ShaderRegister = 0;
-	sampler.RegisterSpace = 0;
-	sampler.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+	//rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // this is a descriptor table
+	//rootParameters[1].DescriptorTable = descriptorTable; // this is our descriptor table for this root parameter
+	//rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // our pixel shader will be the only shader accessing this parameter for now
+#pragma endregion
 
-	CD3DX12_ROOT_SIGNATURE_DESC rootSignatureDesc;
-	rootSignatureDesc.Init(_countof(rootParameters),  
-		rootParameters, 
-		1, 
-		&sampler, 
-		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT | 
-		D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
-		D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
-		D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS);
+#pragma region OldSampler 
+	//D3D12_STATIC_SAMPLER_DESC sampler = {};
+	//sampler.Filter = D3D12_FILTER_MIN_MAG_MIP_POINT;
+	//sampler.AddressU = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
+	//sampler.AddressV = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
+	//sampler.AddressW = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
+	//sampler.MipLODBias = 0;
+	//sampler.MaxAnisotropy = 0;
+	//sampler.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
+	//sampler.BorderColor = D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK;
+	//sampler.MinLOD = 0.0f;
+	//sampler.MaxLOD = D3D12_FLOAT32_MAX;
+	//sampler.ShaderRegister = 0;
+	//sampler.RegisterSpace = 0;
+	//sampler.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+#pragma endregion
+	 
+#pragma region NewInit
+	BuildDescriptorHeaps();
+	BuildConstantBuffers(); 
+	BuildRootSignature();
 
-	ID3DBlob* signature;
-	D3D12SerializeRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, nullptr);
-	m_dxo.Device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&m_RootSignature));
 #pragma endregion 
 
+
 	//vs
-	Graphic::Shader vertexShader = m_ct.rcommand->CreateShader(L"DefaultVS.cso");
+	Graphic::Shader vertexShader = m_ct.rcommand->CreateShader(L"cubeVS.cso");
 	D3D12_SHADER_BYTECODE vertexShaderBytecode = { vertexShader.byteCode->GetBufferPointer(),
 												   vertexShader.byteCode->GetBufferSize() };
 
 	//ps
-	Graphic::Shader pixelShader = m_ct.rcommand->CreateShader(L"DefaultPS.cso");
+	Graphic::Shader pixelShader = m_ct.rcommand->CreateShader(L"cubePS.cso");
 	D3D12_SHADER_BYTECODE pixelShaderBytecode = { pixelShader.byteCode->GetBufferPointer(),
 												  pixelShader.byteCode->GetBufferSize() };
 	//ied
@@ -318,32 +299,6 @@ void App::testGrawTriangle()
 	VBviews.VBViews.insert(VBviews.VBViews.end(), meshViews.VB.VBViews.begin(), meshViews.VB.VBViews.end());
 	IBViews.IBViews.insert(IBViews.IBViews.end(), meshViews.IB.IBViews.begin(), meshViews.IB.IBViews.end());
 
-
-	// 创建上传缓冲区(共享缓冲区) --- 包括 resources heap/Descriptor Heap/指向ConstantBufferView的指针
-	for (int i = 0; i < m_dxo.frameBufferCount; ++i)
-	{
-		m_dxo.Device->CreateCommittedResource(
-			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD), //指明为上传缓冲堆
-			D3D12_HEAP_FLAG_NONE, // no flags
-			&CD3DX12_RESOURCE_DESC::Buffer(1024 * 64), //资源堆的大小必须为64KB的大小的倍数
-			D3D12_RESOURCE_STATE_GENERIC_READ,
-			nullptr,
-			IID_PPV_ARGS(&constantBufferUploadHeap[i]));
-		constantBufferUploadHeap[i]->SetName(L"常量缓冲区的上传缓冲堆"); 
-
-		ZeroMemory(&cbPerObject, sizeof(cbPerObject));
-
-		CD3DX12_RANGE readRange(0, 0);    // We do not intend to read from this resource on the CPU. (End is less than or equal to begin)
-		constantBufferUploadHeap[i]->Map(0, &readRange, reinterpret_cast<void**>(&cbvGPUAddress[i]));
-		memcpy(cbvGPUAddress[i], &cbPerObject, sizeof(cbPerObject));
-		memcpy(cbvGPUAddress[i] + ConstantBufferPerObjectAlignedSize, &cbPerObject, sizeof(cbPerObject));
-	}
-
-	D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
-	heapDesc.NumDescriptors = 1;
-	heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-	heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-	m_dxo.Device->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&mainDescriptorHeap));
 
 	BYTE* imageData;
 	// 加载图像
@@ -617,8 +572,7 @@ void App::CreateRtvAndDsvDescriptorHeaps()
 		m_dxo.Device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&m_rtvDescriptorHeap))
 	);
 	m_dxo.RTVDescSize = m_dxo.Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-
-	//CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());;
+	 
 	auto rtvHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(m_rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 
 	for (int i = 0; i < FrameBufferCount; i++)
@@ -731,21 +685,9 @@ void App::Run(std::function<void(App*)> app)
 			if (app)
 			{
 				app(this);
-			}
-
-#ifndef NDEBUG
-			std::cout << "Before Update" << std::endl;
-#endif // !NDEBUG
+			} 
 			Update();
-#ifndef NDEBUG
-			std::cout << "After Update" << std::endl; 
-#endif // !NDEBUG
-
-			//绘制
 			Render();
-#ifndef NDEBUG
-			std::cout << "after Render()" << std::endl;
-#endif // !NDEBUG
 
 		}
 	}
@@ -768,3 +710,68 @@ LRESULT App::WinCallBack(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	}
 	return DefWindowProc(hWnd, msg, wParam, lParam);
 }
+
+
+
+
+#pragma region HelperMethod
+void App::BuildRootSignature()
+{
+	//着色程序通常需要资源作为输入(常量缓冲，纹理，采样器)。
+	//根签名定义着色程序期望的资源。如果我们把着色器程序看作一个函数，
+	//把输入资源看作函数参数，那么根签名可以看作是定义函数签名。
+
+	//根参数可以是表、根描述符或根常量。
+	CD3DX12_ROOT_PARAMETER slotRootParameter[1];
+
+	//创建一个单独的cbv描述符表。
+	CD3DX12_DESCRIPTOR_RANGE cbvTable;
+	cbvTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);
+	slotRootParameter[0].InitAsDescriptorTable(1, &cbvTable);
+
+	//根签名是一个根参数数组。
+	CD3DX12_ROOT_SIGNATURE_DESC rootSignatureDesc(1, slotRootParameter, 0, nullptr,
+		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
+		D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
+		D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
+		D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS);
+
+	//创建一个根签名，用一个槽指向由一个常量缓冲区组成的描述符范围
+	ID3DBlob* signature;
+	D3D12SerializeRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, nullptr);
+	m_dxo.Device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&m_RootSignature));
+
+
+}
+void App::BuildDescriptorHeaps()
+{  
+	D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
+	heapDesc.NumDescriptors = 1;
+	heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+	heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+	m_dxo.Device->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&mainDescriptorHeap));
+
+}
+void App::BuildConstantBuffers()
+{ 
+	// 创建上传缓冲区(共享缓冲区) --- 包括 resources heap/Descriptor Heap/指向ConstantBufferView的指针
+	for (int i = 0; i < m_dxo.frameBufferCount; ++i)
+	{
+		m_dxo.Device->CreateCommittedResource(
+			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD), //指明为上传缓冲堆
+			D3D12_HEAP_FLAG_NONE, // no flags
+			&CD3DX12_RESOURCE_DESC::Buffer(1024 * 64), //资源堆的大小必须为64KB的大小的倍数
+			D3D12_RESOURCE_STATE_GENERIC_READ,
+			nullptr,
+			IID_PPV_ARGS(&constantBufferUploadHeap[i]));
+		constantBufferUploadHeap[i]->SetName(L"常量缓冲区的上传缓冲堆");
+
+		ZeroMemory(&cbPerObject, sizeof(cbPerObject));
+
+		CD3DX12_RANGE readRange(0, 0);    //不打算在CPU上读取这个资源。(结束小于或等于开始)
+		constantBufferUploadHeap[i]->Map(0, &readRange, reinterpret_cast<void**>(&cbvGPUAddress[i]));
+		memcpy(cbvGPUAddress[i], &cbPerObject, sizeof(cbPerObject));
+		memcpy(cbvGPUAddress[i] + ConstantBufferPerObjectAlignedSize, &cbPerObject, sizeof(cbPerObject)); //这里添加bias偏移到缓冲区中的第下一个个对象常量缓冲区。
+	}
+}
+#pragma endregion 

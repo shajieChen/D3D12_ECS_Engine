@@ -23,7 +23,7 @@ protected: /*Private Helper Method*/
 	void InitMainWindow(HINSTANCE hInstance, int ShowWnd, int width, int height, bool isfullScreen);
 	void InitWindow(HINSTANCE& hInstance);
 
-	void testGrawTriangle();  /*deletable */
+	void initResource();  /*deletable */
 	void UpdateTriangle(); /*deletable*/
 
 	void Update();
@@ -37,7 +37,14 @@ protected: /*Private Helper Method*/
 	void CreateSwapChain();
 	void CreateCommandObjects();
 
-	void FlushCommandQueue();
+	void FlushCommandQueue();  
+private : /*Helper Method*/
+	void BuildDescriptorHeaps();
+	void BuildConstantBuffers();
+	void BuildRootSignature();
+	void BuildShadersAndInputLayout();
+	void BuildBoxGeometry();
+	void BuildPSO();
 
 private:
 	DXObject m_dxo;
